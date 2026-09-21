@@ -9,6 +9,7 @@ import (
 	"maps"
 	"os"
 	"slices"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 )
@@ -103,28 +104,8 @@ func ParseConfig(data []byte) (*Config, error) {
 
 	cfg := &Config{}
 	for i, raw := range entries {
-		n := i + 1
-		var fields map[string]json.RawMessage
-		if err := json.Unmarshal(raw, &fields); err != nil || fields == nil {
-			return nil, problem("program.format", n)
-		}
-		var p Program
-		for _, key := range slices.Sorted(maps.Keys(fields)) {
-			switch key {
-			case "exe":
-				if json.Unmarshal(fields[key], &p.Exe) != nil {
-					return nil, problem("program.exe", n)
-				}
-			case "parameter":
-				if json.Unmarshal(fields[key], &p.Parameters) != nil {
-					return nil, problem("program.parameter", n)
-				}
-			default:
-				return nil, problem("program.key", n, key)
-			}
-		}
-		p.Exe = strings.TrimSpace(p.Exe)
-		if err := p.check(n); err != nil {
+		p, err := parseProgram(raw, strconv.Itoa(i+1), false)
+		if err != nil {
 			return nil, err
 		}
 		cfg.Programs = append(cfg.Programs, p)
@@ -143,18 +124,31 @@ func position(data []byte, offset int64) (line, col int) {
 	return line, max(col, 1)
 }
 
-// Find liefert das erste Programm, dessen EXE vorhanden ist, samt Pfad. Der
-// Starter selbst zählt nie mit – er würde sich sonst endlos neu starten.
+// Find liefert das erste Programm, dessen EXE vorhanden ist, samt Pfad, und
+// prüft, dass seine „vorher“-Programme auch da sind. Der Starter selbst zählt
+// nie mit – er würde sich sonst endlos neu starten.
 func (c *Config) Find(dir, self string) (Program, string, error) {
 	selfInfo, selfErr := os.Stat(self)
+	isSelf := func(info fs.FileInfo) bool { return selfErr == nil && os.SameFile(info, selfInfo) }
 	names := make([]string, 0, len(c.Programs))
-	for _, p := range c.Programs {
+	for i, p := range c.Programs {
 		path := p.Path(dir)
 		info, err := os.Stat(path)
-		if err == nil && info.Mode().IsRegular() && (selfErr != nil || !os.SameFile(info, selfInfo)) {
-			return p, path, nil
+		if err != nil || !info.Mode().IsRegular() || isSelf(info) {
+			names = append(names, p.Exe)
+			continue
 		}
-		names = append(names, p.Exe)
+		for j, b := range p.Before {
+			where := beforeWhere(strconv.Itoa(i+1), j+1)
+			info, err := os.Stat(b.Path(dir))
+			if err != nil || !info.Mode().IsRegular() {
+				return Program{}, "", problem("program.missing", where, b.Exe)
+			}
+			if isSelf(info) {
+				return Program{}, "", problem("program.self", where)
+			}
+		}
+		return p, path, nil
 	}
 	return Program{}, "", problem("config.notfound", "• "+strings.Join(names, "\n• "))
 }

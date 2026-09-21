@@ -1,37 +1,102 @@
 package classes
 
 import (
+	"encoding/json"
+	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
+	"time"
 )
 
 // DataDir ist der Ordner neben dem Starter, für den {daten} steht.
 const DataDir = "daten"
 
+// maxWait begrenzt „warten“, damit ein Tippfehler den Starter nicht ewig aufhält.
+const maxWait = 60 * time.Second
+
 // placeholder findet {ordner}, {daten} und Tippfehler wie {data} – aber keine
 // GUIDs oder JSON-Texte, die ein Programm vielleicht als Parameter braucht.
 var placeholder = regexp.MustCompile(`\{(\pL+)\}`)
 
-// Program ist ein Eintrag in config_starter.json: welche EXE mit welchen Parametern.
+// Program ist ein Eintrag in config_starter.json: welche EXE mit welchen
+// Parametern und welche Programme vorher starten.
 type Program struct {
 	Exe        string
 	Parameters []string
+	Before     []Program     // „vorher“: startet der Starter zuerst, in dieser Reihenfolge
+	Wait       time.Duration // „warten“: Pause nach dem Start eines „vorher“-Programms
 }
 
-// check prüft den Eintrag Nummer n (ab 1).
-func (p Program) check(n int) error {
+// parseProgram liest einen Eintrag; where nennt ihn in Meldungen („3“ oder
+// „3 (vorher 1)“). Ein „vorher“-Eintrag kennt „warten“ statt „vorher“.
+func parseProgram(raw json.RawMessage, where string, before bool) (Program, error) {
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &fields); err != nil || fields == nil {
+		return Program{}, problem("program.format", where)
+	}
+	allowed := "exe, parameter, vorher"
+	if before {
+		allowed = "exe, parameter, warten"
+	}
+	var p Program
+	for _, key := range slices.Sorted(maps.Keys(fields)) {
+		value := fields[key]
+		switch {
+		case key == "exe":
+			if json.Unmarshal(value, &p.Exe) != nil {
+				return Program{}, problem("program.exe", where)
+			}
+		case key == "parameter":
+			if json.Unmarshal(value, &p.Parameters) != nil {
+				return Program{}, problem("program.parameter", where)
+			}
+		case key == "vorher" && !before:
+			var list []json.RawMessage
+			if json.Unmarshal(value, &list) != nil {
+				return Program{}, problem("program.before", where)
+			}
+			for i, item := range list {
+				b, err := parseProgram(item, beforeWhere(where, i+1), true)
+				if err != nil {
+					return Program{}, err
+				}
+				p.Before = append(p.Before, b)
+			}
+		case key == "warten" && before:
+			var seconds float64
+			if json.Unmarshal(value, &seconds) != nil || seconds < 0 || seconds > maxWait.Seconds() {
+				return Program{}, problem("program.wait", where)
+			}
+			p.Wait = time.Duration(seconds * float64(time.Second))
+		default:
+			return Program{}, problem("program.key", where, key, allowed)
+		}
+	}
+	p.Exe = strings.TrimSpace(p.Exe)
+	return p, p.check(where)
+}
+
+// beforeWhere nennt den n-ten „vorher“-Eintrag von where.
+func beforeWhere(where string, n int) string {
+	return fmt.Sprintf("%s (vorher %d)", where, n)
+}
+
+// check prüft EXE und Platzhalter des Eintrags where.
+func (p Program) check(where string) error {
 	if p.Exe == "" {
-		return problem("program.exe", n)
+		return problem("program.exe", where)
 	}
 	if !strings.EqualFold(filepath.Ext(p.Exe), ".exe") {
-		return problem("program.notexe", n, p.Exe)
+		return problem("program.notexe", where, p.Exe)
 	}
 	for _, arg := range p.Parameters {
 		for _, m := range placeholder.FindAllStringSubmatch(arg, -1) {
 			if name := strings.ToLower(m[1]); name != "ordner" && name != "daten" {
-				return problem("program.placeholder", n, m[0])
+				return problem("program.placeholder", where, m[0])
 			}
 		}
 	}
@@ -78,9 +143,20 @@ func (p Program) Arguments(dir string, extra []string) ([]string, error) {
 	return args, nil
 }
 
-// Start startet das Programm mit seinen Parametern und extra; exe ist der
-// Pfad, den Config.Find geliefert hat.
+// Start startet erst die „vorher“-Programme, jeweils mit ihrer Pause, dann das
+// Programm selbst mit seinen Parametern und extra. exe ist der Pfad, den
+// Config.Find geliefert hat.
 func (p Program) Start(exe, dir string, extra []string) error {
+	for _, b := range p.Before {
+		if err := b.launch(b.Path(dir), dir, nil); err != nil {
+			return err
+		}
+		time.Sleep(b.Wait)
+	}
+	return p.launch(exe, dir, extra)
+}
+
+func (p Program) launch(exe, dir string, extra []string) error {
 	args, err := p.Arguments(dir, extra)
 	if err != nil {
 		return err

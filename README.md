@@ -15,15 +15,16 @@ Welches Programm mit welchen Parametern, steht in `config_starter.json`.
 ## Start in 3 Schritten
 
 1. `starter.exe` in den Ordner des Programms kopieren, z. B. neben `draw.io.exe`.
-2. `starter.exe` doppelklicken. Beim ersten Start legt er `config_starter.json` an.
+   Der Name ist frei, etwa `portable_drawio.exe`.
+2. Doppelklicken. Beim ersten Start legt der Starter `config_starter.json` an.
 3. Fehlt das Programm dort, EXE und Parameter eintragen – der Starter bietet an, die Datei zu öffnen.
 
 Schon eingetragen: draw.io, OrcaSlicer, Creality Print, PrusaSlicer,
-QElectroTech und Mullvad Browser. Wer bisher `OrcaSlicerPortableStarter`,
+QElectroTech, Mullvad Browser und ecoDMS. Wer bisher `OrcaSlicerPortableStarter`,
 `CrealityPrintPortableStarter` oder `PrusaSlicerPortable` nutzt, behält seinen
 Ordner `profile`.
 
-**Update:** neue `starter.exe` drüberkopieren. `config_starter.json` und die Daten bleiben.
+**Update:** neue EXE drüberkopieren. `config_starter.json` und die Daten bleiben.
 
 ## config_starter.json
 
@@ -51,21 +52,37 @@ Ordner `profile`.
   Unterordner, Pfade ab dem Starter mit `{ordner}/…` schreiben.
 - Dateien, die man auf den Starter zieht, bekommt das Programm mit.
 
-Fehler in der Datei meldet der Starter mit Zeile und Zeichen.
+Braucht ein Programm vorher ein anderes, startet `vorher` dieses zuerst;
+`warten` ist die Pause danach in Sekunden (0 bis 60):
 
-## Eigenes Icon
-
-```bat
-tools\build.bat "D:\Apps\drawio\draw.io.exe"
+```json
+{
+  "exe": "ecodmsclient.exe",
+  "vorher": [
+    { "exe": "ecodmssinglesignon.exe", "warten": 3 }
+  ]
+}
 ```
 
-baut den Starter mit dem Icon dieses Programms – oder einer `.ico`-Datei.
-Ohne Angabe gibt es das Standard-Icon.
+Fehler in der Datei meldet der Starter mit Zeile und Zeichen.
+
+## Starter mit dem Icon des Programms
+
+Programmordner auf `tools\build.bat` ziehen, gern mehrere auf einmal:
+
+```bat
+tools\build.bat "D:\Apps\drawio" "D:\Apps\OrcaSlicer"
+```
+
+Jeder Ordner bekommt `portable_<programm>.exe` mit Icon und Namen des
+Programms, das der Starter dort findet – fehlt `config_starter.json`, kommt
+sie dazu. Hat die EXE kein Icon, nimmt das Werkzeug eine gleichnamige
+`.ico` aus dem Programmordner, sonst das Standard-Icon.
 
 ## Bauen
 
 Voraussetzung ist [Go](https://go.dev/dl/) ab 1.24, sonst nichts.
-`tools\build.bat` prüft, testet und legt `starter.exe` und
+`tools\build.bat` ohne Angabe prüft, testet und legt `starter.exe` und
 `config_starter.json` in `dist\` ab.
 
 ## Sicherheit

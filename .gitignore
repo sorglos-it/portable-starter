@@ -4,6 +4,7 @@ bin/
 obj/
 .pio/
 apps/*/*.syso
+Thumbs.db
 
 # Laufzeitdaten - Ausnahme: Firmware-Dateisystem
 apps/*/data/

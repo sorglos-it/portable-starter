@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 )
 
 // wantProblem prüft, dass err ein Problem mit key und args ist.
@@ -34,11 +35,26 @@ func TestParseExample(t *testing.T) {
 	for _, p := range cfg.Programs {
 		exes = append(exes, p.Exe)
 	}
-	if want := []string{"draw.io.exe", "drawio.exe", "orca-slicer.exe", "CrealityPrint.exe", "prusa-slicer.exe", "bin/qelectrotech.exe", "Browser/mullvadbrowser.exe"}; !reflect.DeepEqual(exes, want) {
+	if want := []string{"draw.io.exe", "drawio.exe", "orca-slicer.exe", "CrealityPrint.exe", "prusa-slicer.exe", "bin/qelectrotech.exe", "Browser/mullvadbrowser.exe", "ecodmsclient.exe"}; !reflect.DeepEqual(exes, want) {
 		t.Errorf("Programme %v, erwartet %v", exes, want)
 	}
 	if want := []string{"--user-data-dir={daten}", "--disable-update"}; !reflect.DeepEqual(cfg.Programs[0].Parameters, want) {
 		t.Errorf("Parameter %v, erwartet %v", cfg.Programs[0].Parameters, want)
+	}
+	ecodms := cfg.Programs[len(cfg.Programs)-1]
+	if want := []Program{{Exe: "ecodmssinglesignon.exe", Wait: 3 * time.Second}}; !reflect.DeepEqual(ecodms.Before, want) {
+		t.Errorf("ecoDMS vorher %+v, erwartet %+v", ecodms.Before, want)
+	}
+}
+
+func TestParseBefore(t *testing.T) {
+	cfg, err := ParseConfig([]byte(`{"programme":[{"exe":"b.exe","vorher":[{"exe":"a.exe","parameter":["--x"],"warten":1.5},{"exe":"c.exe"}]}]}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []Program{{Exe: "a.exe", Parameters: []string{"--x"}, Wait: 1500 * time.Millisecond}, {Exe: "c.exe"}}
+	if got := cfg.Programs[0].Before; !reflect.DeepEqual(got, want) {
+		t.Errorf("vorher %+v, erwartet %+v", got, want)
 	}
 }
 
@@ -73,14 +89,22 @@ func TestParseRejects(t *testing.T) {
 		{"keine Liste", `{"programme":{"exe":"a.exe"}}`, "config.list", nil},
 		{"leere Liste", `{"programme":[]}`, "config.empty", nil},
 		{"ohne programme", `{}`, "config.empty", nil},
-		{"Eintrag kein Objekt", `{"programme":["a.exe"]}`, "program.format", []any{1}},
-		{"Tippfehler", `{"programme":[{"exe":"a.exe"},{"exe":"b.exe","paramter":[]}]}`, "program.key", []any{2, "paramter"}},
-		{"exe fehlt", `{"programme":[{"parameter":[]}]}`, "program.exe", []any{1}},
-		{"exe keine Zeichenkette", `{"programme":[{"exe":5}]}`, "program.exe", []any{1}},
-		{"keine exe", `{"programme":[{"exe":"start.bat"}]}`, "program.notexe", []any{1, "start.bat"}},
-		{"Parameter als Text", `{"programme":[{"exe":"a.exe","parameter":"--x"}]}`, "program.parameter", []any{1}},
-		{"Parameter als Zahl", `{"programme":[{"exe":"a.exe","parameter":[8080]}]}`, "program.parameter", []any{1}},
-		{"falscher Platzhalter", `{"programme":[{"exe":"a.exe","parameter":["--dir={data}"]}]}`, "program.placeholder", []any{1, "{data}"}},
+		{"Eintrag kein Objekt", `{"programme":["a.exe"]}`, "program.format", []any{"1"}},
+		{"Tippfehler", `{"programme":[{"exe":"a.exe"},{"exe":"b.exe","paramter":[]}]}`, "program.key", []any{"2", "paramter", "exe, parameter, vorher"}},
+		{"exe fehlt", `{"programme":[{"parameter":[]}]}`, "program.exe", []any{"1"}},
+		{"exe keine Zeichenkette", `{"programme":[{"exe":5}]}`, "program.exe", []any{"1"}},
+		{"keine exe", `{"programme":[{"exe":"start.bat"}]}`, "program.notexe", []any{"1", "start.bat"}},
+		{"Parameter als Text", `{"programme":[{"exe":"a.exe","parameter":"--x"}]}`, "program.parameter", []any{"1"}},
+		{"Parameter als Zahl", `{"programme":[{"exe":"a.exe","parameter":[8080]}]}`, "program.parameter", []any{"1"}},
+		{"falscher Platzhalter", `{"programme":[{"exe":"a.exe","parameter":["--dir={data}"]}]}`, "program.placeholder", []any{"1", "{data}"}},
+		{"vorher keine Liste", `{"programme":[{"exe":"b.exe","vorher":{"exe":"a.exe"}}]}`, "program.before", []any{"1"}},
+		{"vorher ohne exe", `{"programme":[{"exe":"b.exe","vorher":[{"warten":3}]}]}`, "program.exe", []any{"1 (vorher 1)"}},
+		{"vorher keine exe", `{"programme":[{"exe":"b.exe","vorher":[{"exe":"a.exe"},{"exe":"x.cmd"}]}]}`, "program.notexe", []any{"1 (vorher 2)", "x.cmd"}},
+		{"vorher verschachtelt", `{"programme":[{"exe":"b.exe","vorher":[{"exe":"a.exe","vorher":[]}]}]}`, "program.key", []any{"1 (vorher 1)", "vorher", "exe, parameter, warten"}},
+		{"warten ohne vorher", `{"programme":[{"exe":"b.exe","warten":3}]}`, "program.key", []any{"1", "warten", "exe, parameter, vorher"}},
+		{"warten zu lang", `{"programme":[{"exe":"b.exe","vorher":[{"exe":"a.exe","warten":61}]}]}`, "program.wait", []any{"1 (vorher 1)"}},
+		{"warten negativ", `{"programme":[{"exe":"b.exe","vorher":[{"exe":"a.exe","warten":-1}]}]}`, "program.wait", []any{"1 (vorher 1)"}},
+		{"warten als Text", `{"programme":[{"exe":"b.exe","vorher":[{"exe":"a.exe","warten":"3"}]}]}`, "program.wait", []any{"1 (vorher 1)"}},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			_, err := ParseConfig([]byte(c.data))
@@ -160,4 +184,18 @@ func TestFind(t *testing.T) {
 
 	_, _, err := cfg("a.exe", "starter.exe").Find(dir, self)
 	wantProblem(t, err, "config.notfound", "• a.exe\n• starter.exe")
+
+	// „vorher“-Programme müssen da sein und dürfen nicht der Starter sein
+	withBefore := func(before string) *Config {
+		c := cfg("a.exe", "b.exe")
+		c.Programs[1].Before = []Program{{Exe: "bin/c.exe"}, {Exe: before}}
+		return c
+	}
+	if _, got, err := withBefore("b.exe").Find(dir, self); err != nil || got != b {
+		t.Errorf("vorher vorhanden: %q %v", got, err)
+	}
+	_, _, err = withBefore("fehlt.exe").Find(dir, self)
+	wantProblem(t, err, "program.missing", "2 (vorher 2)", "fehlt.exe")
+	_, _, err = withBefore("starter.exe").Find(dir, self)
+	wantProblem(t, err, "program.self", "2 (vorher 2)")
 }

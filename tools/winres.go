@@ -1,11 +1,8 @@
-//go:build ignore
-
-// winres schreibt die Windows-Ressourcen des Starters – Icon, Manifest und
-// Versionsangaben – als .syso-Datei, die go build von selbst einbindet.
-// Das Icon kommt aus einer .ico-Datei oder aus einer anderen .exe.
-//
-//	go run tools/winres.go -icon apps/desktop/assets/icon.ico -version 1.0.0 -out apps/desktop/rsrc_windows_amd64.syso
 package main
+
+// winres schreibt die Windows-Ressourcen einer Starter-EXE – Icon, Manifest
+// und Versionsangaben – als .syso-Datei, die go build von selbst einbindet.
+// Das Icon kommt aus einer .ico-Datei oder aus einer anderen .exe.
 
 import (
 	"bytes"
@@ -13,7 +10,6 @@ import (
 	"debug/pe"
 	"encoding/binary"
 	"errors"
-	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -33,35 +29,21 @@ const (
 
 var le = binary.LittleEndian
 
-func main() {
-	icon := flag.String("icon", "", ".ico- oder .exe-Datei mit dem Icon")
-	version := flag.String("version", "", "Version, z. B. 1.0.0")
-	out := flag.String("out", "", "Ziel, z. B. apps/desktop/rsrc_windows_amd64.syso")
-	flag.Parse()
-	if err := run(*icon, *version, *out); err != nil {
-		fmt.Fprintln(os.Stderr, "winres:", err)
-		os.Exit(1)
-	}
+// resInfo beschreibt, was in die Ressourcen einer Starter-EXE kommt.
+type resInfo struct {
+	images      []iconImage
+	version     [4]uint16
+	description string // FileDescription – so heißt die EXE in Taskleiste und Task-Manager
+	filename    string // OriginalFilename
 }
 
-func run(iconPath, version, out string) error {
-	if iconPath == "" || version == "" || out == "" {
-		return errors.New("-icon, -version und -out angeben")
-	}
-	v, err := parseVersion(version)
-	if err != nil {
-		return err
-	}
-	images, err := loadIcon(iconPath)
-	if err != nil {
-		return fmt.Errorf("Icon aus %s: %w", iconPath, err)
-	}
-
+// writeSyso schreibt Icon, Versionsangaben und Manifest nach out.
+func writeSyso(info resInfo, out string) error {
 	var res []resource
-	group := make([]byte, 6, 6+14*len(images)) // GRPICONDIR
+	group := make([]byte, 6, 6+14*len(info.images)) // GRPICONDIR
 	le.PutUint16(group[2:], 1)
-	le.PutUint16(group[4:], uint16(len(images)))
-	for i, img := range images {
+	le.PutUint16(group[4:], uint16(len(info.images)))
+	for i, img := range info.images {
 		id := uint16(i + 1)
 		res = append(res, resource{rtIcon, id, img.data})
 		entry := make([]byte, 14) // GRPICONDIRENTRY
@@ -72,14 +54,10 @@ func run(iconPath, version, out string) error {
 	}
 	res = append(res,
 		resource{rtGroupIcon, 1, group},
-		resource{rtVersion, 1, versionInfo(v)},
-		resource{rtManifest, 1, []byte(manifest(v))},
+		resource{rtVersion, 1, versionInfo(info)},
+		resource{rtManifest, 1, []byte(manifest(info.version))},
 	)
-	if err := os.WriteFile(out, coff(res), 0o644); err != nil {
-		return err
-	}
-	fmt.Printf("%s: Icon aus %s (%d Größen), Version %s\n", filepath.Base(out), filepath.Base(iconPath), len(images), version)
-	return nil
+	return os.WriteFile(out, coff(res), 0o644)
 }
 
 func parseVersion(s string) ([4]uint16, error) {
@@ -280,7 +258,8 @@ func (r *resources) find(typ uint16, id int) ([]byte, error) {
 }
 
 // versionInfo baut VS_VERSIONINFO – der Explorer zeigt es unter Eigenschaften › Details.
-func versionInfo(v [4]uint16) []byte {
+func versionInfo(info resInfo) []byte {
+	v := info.version
 	ms, ls := uint32(v[0])<<16|uint32(v[1]), uint32(v[2])<<16|uint32(v[3])
 	fixed := make([]byte, 52) // VS_FIXEDFILEINFO
 	for i, x := range []uint32{0xFEEF04BD, 0x00010000, ms, ls, ms, ls, 0x3F, 0, 0x00040004, 1, 0, 0, 0} {
@@ -290,11 +269,11 @@ func versionInfo(v [4]uint16) []byte {
 	var strs [][]byte
 	for _, kv := range [][2]string{
 		{"CompanyName", "sorglos-it"},
-		{"FileDescription", "Portable Starter"},
+		{"FileDescription", info.description},
 		{"FileVersion", version},
-		{"InternalName", "starter"},
+		{"InternalName", strings.TrimSuffix(info.filename, ".exe")},
 		{"LegalCopyright", "© Thomas Weirich, MIT-Lizenz"},
-		{"OriginalFilename", "starter.exe"},
+		{"OriginalFilename", info.filename},
 		{"ProductName", "Portable Starter"},
 		{"ProductVersion", version},
 	} {
@@ -402,7 +381,7 @@ func coff(res []resource) []byte {
 		binary.Write(&b, le, pe.Reloc{VirtualAddress: off, Type: 3}) // IMAGE_REL_AMD64_ADDR32NB
 	}
 	binary.Write(&b, le, pe.COFFSymbol{Name: name, SectionNumber: 1, StorageClass: 3}) // IMAGE_SYM_CLASS_STATIC
-	binary.Write(&b, le, uint32(4))                                                     // leere Stringtabelle
+	binary.Write(&b, le, uint32(4))                                                    // leere Stringtabelle
 	return b.Bytes()
 }
 

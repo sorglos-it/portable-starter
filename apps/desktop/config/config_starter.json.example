@@ -33,6 +33,12 @@
     },
     {
       "exe": "Browser/mullvadbrowser.exe"
+    },
+    {
+      "exe": "ecodmsclient.exe",
+      "vorher": [
+        { "exe": "ecodmssinglesignon.exe", "warten": 3 }
+      ]
     }
   ]
 }
