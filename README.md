@@ -18,9 +18,10 @@ Welches Programm mit welchen Parametern, steht in `config_starter.json`.
 2. `starter.exe` doppelklicken. Beim ersten Start legt er `config_starter.json` an.
 3. Fehlt das Programm dort, EXE und Parameter eintragen – der Starter bietet an, die Datei zu öffnen.
 
-Schon eingetragen: draw.io, OrcaSlicer und Creality Print. Wer bisher
-`OrcaSlicerPortableStarter` oder `CrealityPrintPortableStarter` nutzt, behält
-seinen Ordner `profile`.
+Schon eingetragen: draw.io, OrcaSlicer, Creality Print, PrusaSlicer,
+QElectroTech und Mullvad Browser. Wer bisher `OrcaSlicerPortableStarter`,
+`CrealityPrintPortableStarter` oder `PrusaSlicerPortable` nutzt, behält seinen
+Ordner `profile`.
 
 **Update:** neue `starter.exe` drüberkopieren. `config_starter.json` und die Daten bleiben.
 
@@ -46,7 +47,8 @@ seinen Ordner `profile`.
 - `exe` – Dateiname, auch mit Unterordner: `bin/programm.exe`.
 - `parameter` – ein Eintrag je Parameter. Leerzeichen brauchen keine Anführungszeichen.
 - `{ordner}` – Ordner des Starters. `{daten}` – dessen Unterordner `daten`, wird angelegt.
-- Relative Pfade gelten ab dem Ordner des Programms.
+- Relative Pfade gelten ab dem Ordner des Programms. Liegt die EXE in einem
+  Unterordner, Pfade ab dem Starter mit `{ordner}/…` schreiben.
 - Dateien, die man auf den Starter zieht, bekommt das Programm mit.
 
 Fehler in der Datei meldet der Starter mit Zeile und Zeichen.

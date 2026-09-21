@@ -15,6 +15,24 @@
     {
       "exe": "CrealityPrint.exe",
       "parameter": ["--datadir", "profile"]
+    },
+    {
+      "exe": "prusa-slicer.exe",
+      "parameter": ["--datadir", "profile"]
+    },
+    {
+      "exe": "bin/qelectrotech.exe",
+      "parameter": [
+        "-platform", "windows:fontengine=freetype",
+        "--common-elements-dir={ordner}/elements/",
+        "--common-tbt-dir={ordner}/titleblocks/",
+        "--lang-dir={ordner}/lang/",
+        "--config-dir={ordner}/conf/",
+        "-style", "plastique"
+      ]
+    },
+    {
+      "exe": "Browser/mullvadbrowser.exe"
     }
   ]
 }

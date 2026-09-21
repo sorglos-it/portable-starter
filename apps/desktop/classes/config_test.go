@@ -34,7 +34,7 @@ func TestParseExample(t *testing.T) {
 	for _, p := range cfg.Programs {
 		exes = append(exes, p.Exe)
 	}
-	if want := []string{"draw.io.exe", "drawio.exe", "orca-slicer.exe", "CrealityPrint.exe"}; !reflect.DeepEqual(exes, want) {
+	if want := []string{"draw.io.exe", "drawio.exe", "orca-slicer.exe", "CrealityPrint.exe", "prusa-slicer.exe", "bin/qelectrotech.exe", "Browser/mullvadbrowser.exe"}; !reflect.DeepEqual(exes, want) {
 		t.Errorf("Programme %v, erwartet %v", exes, want)
 	}
 	if want := []string{"--user-data-dir={daten}", "--disable-update"}; !reflect.DeepEqual(cfg.Programs[0].Parameters, want) {
