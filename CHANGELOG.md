@@ -6,6 +6,8 @@
 - Arbeitsordner ist immer der Ordner des Starters: relative Pfade und Daten landen dort,
   in beiden Aufbauten gleich.
 - Neuer Platzhalter `{app}` für den Ordner mit den Programmdateien (QElectroTech nutzt ihn).
+- `tools\verknuepfungen.bat` stellt nach dem Umzug Verknüpfungen, Dateitypen und
+  Deinstallationseinträge um, die ins Leere zeigen – mit Sicherung und Rückfrage.
 
 ## 1.0.0 – 21.09.2026
 

@@ -42,6 +42,12 @@ drawio\                        drawio\
 Der Starter sucht die EXE neben sich, sonst im Unterordner `app`. Arbeitsordner
 und Daten liegen in beiden Fällen beim Starter – ein Update tauscht nur `app\`.
 
+**Umziehen:** Programmdateien nach `app\` verschieben; Starter, JSON und
+Datenordner bleiben oben. Danach `tools\verknuepfungen.bat` doppelklicken und den
+Programmordner wählen: Startmenü-Einträge, Dateitypen und Deinstallationseinträge,
+die ins Leere zeigen, gehen dann auf den Starter oder den neuen Ort in `app\`.
+Das Werkzeug zeigt vorher alles, sichert es unter Dokumente und fragt nach.
+
 ## config_starter.json
 
 ```json
