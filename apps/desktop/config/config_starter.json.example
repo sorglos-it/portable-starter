@@ -24,9 +24,9 @@
       "exe": "bin/qelectrotech.exe",
       "parameter": [
         "-platform", "windows:fontengine=freetype",
-        "--common-elements-dir={ordner}/elements/",
-        "--common-tbt-dir={ordner}/titleblocks/",
-        "--lang-dir={ordner}/lang/",
+        "--common-elements-dir={app}/elements/",
+        "--common-tbt-dir={app}/titleblocks/",
+        "--lang-dir={app}/lang/",
         "--config-dir={ordner}/conf/",
         "-style", "plastique"
       ]

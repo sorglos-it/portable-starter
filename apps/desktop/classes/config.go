@@ -124,31 +124,34 @@ func position(data []byte, offset int64) (line, col int) {
 	return line, max(col, 1)
 }
 
-// Find liefert das erste Programm, dessen EXE vorhanden ist, samt Pfad, und
-// prüft, dass seine „vorher“-Programme auch da sind. Der Starter selbst zählt
-// nie mit – er würde sich sonst endlos neu starten.
-func (c *Config) Find(dir, self string) (Program, string, error) {
+// Find liefert das erste Programm der Liste, dessen EXE neben dem Starter
+// (dir) oder in dessen Unterordner app liegt, und prüft, dass seine
+// „vorher“-Programme dort auch sind. Der Starter selbst zählt nie mit – er
+// würde sich sonst endlos neu starten.
+func (c *Config) Find(dir, self string) (Target, error) {
 	selfInfo, selfErr := os.Stat(self)
 	isSelf := func(info fs.FileInfo) bool { return selfErr == nil && os.SameFile(info, selfInfo) }
 	names := make([]string, 0, len(c.Programs))
 	for i, p := range c.Programs {
-		path := p.Path(dir)
-		info, err := os.Stat(path)
-		if err != nil || !info.Mode().IsRegular() || isSelf(info) {
-			names = append(names, p.Exe)
-			continue
-		}
-		for j, b := range p.Before {
-			where := beforeWhere(strconv.Itoa(i+1), j+1)
-			info, err := os.Stat(b.Path(dir))
-			if err != nil || !info.Mode().IsRegular() {
-				return Program{}, "", problem("program.missing", where, b.Exe)
+		for _, app := range roots(dir) {
+			exe := p.Path(app)
+			info, err := os.Stat(exe)
+			if err != nil || !info.Mode().IsRegular() || isSelf(info) {
+				continue
 			}
-			if isSelf(info) {
-				return Program{}, "", problem("program.self", where)
+			for j, b := range p.Before {
+				where := beforeWhere(strconv.Itoa(i+1), j+1)
+				info, err := os.Stat(b.Path(app))
+				if err != nil || !info.Mode().IsRegular() {
+					return Target{}, problem("program.missing", where, b.Exe)
+				}
+				if isSelf(info) {
+					return Target{}, problem("program.self", where)
+				}
 			}
+			return Target{Program: p, Dir: dir, App: app, Exe: exe}, nil
 		}
-		return p, path, nil
+		names = append(names, p.Exe)
 	}
-	return Program{}, "", problem("config.notfound", "• "+strings.Join(names, "\n• "))
+	return Target{}, problem("config.notfound", "• "+strings.Join(names, "\n• "))
 }

@@ -115,43 +115,52 @@ func TestStart(t *testing.T) {
 		return dir
 	}
 
-	t.Run("draw.io", func(t *testing.T) {
-		dir := setup(t, "draw.io.exe")
-		_, got := started(t, filepath.Join(dir, "draw.io.exe"))
-		want := append([]string{dir, "--user-data-dir=" + filepath.Join(dir, "daten"), "--disable-update"}, extra...)
-		if !sameLines(got, want) {
-			t.Errorf("draw.io bekam\n%q\nerwartet\n%q", got, want)
-		}
-	})
+	// Beide Aufbauten: Programm neben dem Starter ("") oder im Unterordner app.
+	// Arbeitsordner und Daten liegen in beiden Fällen beim Starter.
+	for _, sub := range []string{"", "app"} {
+		name := map[string]string{"": "neben dem Starter", "app": "im Ordner app"}[sub]
 
-	t.Run("QElectroTech im Unterordner", func(t *testing.T) {
-		exe := filepath.Join("bin", "qelectrotech.exe")
-		dir := setup(t, exe)
-		_, got := started(t, filepath.Join(dir, exe))
-		want := append([]string{filepath.Join(dir, "bin"),
-			"-platform", "windows:fontengine=freetype",
-			"--common-elements-dir=" + dir + "/elements/",
-			"--common-tbt-dir=" + dir + "/titleblocks/",
-			"--lang-dir=" + dir + "/lang/",
-			"--config-dir=" + dir + "/conf/",
-			"-style", "plastique"}, extra...)
-		if !sameLines(got, want) {
-			t.Errorf("QElectroTech bekam\n%q\nerwartet\n%q", got, want)
-		}
-	})
+		t.Run("draw.io "+name, func(t *testing.T) {
+			exe := filepath.Join(sub, "draw.io.exe")
+			dir := setup(t, exe)
+			_, got := started(t, filepath.Join(dir, exe))
+			want := append([]string{dir, "--user-data-dir=" + filepath.Join(dir, "daten"), "--disable-update"}, extra...)
+			if !sameLines(got, want) {
+				t.Errorf("draw.io bekam\n%q\nerwartet\n%q", got, want)
+			}
+		})
 
-	t.Run("ecoDMS mit vorher und warten", func(t *testing.T) {
-		dir := setup(t, "ecodmssinglesignon.exe", "ecodmsclient.exe")
-		signOn, got := started(t, filepath.Join(dir, "ecodmssinglesignon.exe"))
-		if !sameLines(got, []string{dir}) {
-			t.Errorf("Anmeldung bekam %q, erwartet nur den Arbeitsordner", got)
-		}
-		client, got := started(t, filepath.Join(dir, "ecodmsclient.exe"))
-		if want := append([]string{dir}, extra...); !sameLines(got, want) {
-			t.Errorf("Client bekam\n%q\nerwartet\n%q", got, want)
-		}
-		if pause := client.Sub(signOn); pause < 2900*time.Millisecond {
-			t.Errorf("Client %v nach der Anmeldung gestartet, erwartet 3 s", pause)
-		}
-	})
+		t.Run("QElectroTech "+name, func(t *testing.T) {
+			exe := filepath.Join(sub, "bin", "qelectrotech.exe")
+			dir := setup(t, exe)
+			app := filepath.Join(dir, sub)
+			_, got := started(t, filepath.Join(dir, exe))
+			want := append([]string{dir,
+				"-platform", "windows:fontengine=freetype",
+				"--common-elements-dir=" + app + "/elements/",
+				"--common-tbt-dir=" + app + "/titleblocks/",
+				"--lang-dir=" + app + "/lang/",
+				"--config-dir=" + dir + "/conf/",
+				"-style", "plastique"}, extra...)
+			if !sameLines(got, want) {
+				t.Errorf("QElectroTech bekam\n%q\nerwartet\n%q", got, want)
+			}
+		})
+
+		t.Run("ecoDMS "+name+" mit vorher und warten", func(t *testing.T) {
+			signOnExe, clientExe := filepath.Join(sub, "ecodmssinglesignon.exe"), filepath.Join(sub, "ecodmsclient.exe")
+			dir := setup(t, signOnExe, clientExe)
+			signOn, got := started(t, filepath.Join(dir, signOnExe))
+			if !sameLines(got, []string{dir}) {
+				t.Errorf("Anmeldung bekam %q, erwartet nur den Arbeitsordner", got)
+			}
+			client, got := started(t, filepath.Join(dir, clientExe))
+			if want := append([]string{dir}, extra...); !sameLines(got, want) {
+				t.Errorf("Client bekam\n%q\nerwartet\n%q", got, want)
+			}
+			if pause := client.Sub(signOn); pause < 2900*time.Millisecond {
+				t.Errorf("Client %v nach der Anmeldung gestartet, erwartet 3 s", pause)
+			}
+		})
+	}
 }

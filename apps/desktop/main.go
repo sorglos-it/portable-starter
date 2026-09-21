@@ -1,6 +1,6 @@
-// Portable Starter startet das erste Programm aus config_starter.json, das im
-// eigenen Ordner liegt, mit den eingetragenen Parametern – so bleiben dessen
-// Einstellungen im Programmordner statt im Benutzerprofil.
+// Portable Starter startet das erste Programm aus config_starter.json, das
+// neben ihm oder im Unterordner app liegt, mit den eingetragenen Parametern –
+// so bleiben dessen Einstellungen beim Starter statt im Benutzerprofil.
 package main
 
 import (
@@ -47,9 +47,9 @@ func run(extra []string) (config string, err error) {
 	if err != nil {
 		return config, err
 	}
-	program, exe, err := cfg.Find(dir, self)
+	target, err := cfg.Find(dir, self)
 	if err != nil {
 		return config, err
 	}
-	return config, program.Start(exe, dir, extra)
+	return config, target.Start(extra)
 }

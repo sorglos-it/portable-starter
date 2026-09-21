@@ -60,11 +60,12 @@ type shellExecuteInfo struct {
 	process    uintptr
 }
 
-// Launch startet exe wie ein Doppelklick im Explorer: Verlangt das Programm
-// Adminrechte, fragt Windows nach, Konsolenprogramme bekommen ein Fenster.
-// Bricht der Anwender die Windows-Abfrage ab, ist das kein Fehler.
-func Launch(exe string, args []string) error {
-	return shellExecute(exe, commandLine(args), filepath.Dir(exe))
+// Launch startet exe mit dem Arbeitsordner dir wie ein Doppelklick im
+// Explorer: Verlangt das Programm Adminrechte, fragt Windows nach,
+// Konsolenprogramme bekommen ein Fenster. Bricht der Anwender die
+// Windows-Abfrage ab, ist das kein Fehler.
+func Launch(exe string, args []string, dir string) error {
+	return shellExecute(exe, commandLine(args), dir)
 }
 
 // OpenInEditor öffnet path im Windows-Editor.

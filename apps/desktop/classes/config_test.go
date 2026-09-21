@@ -156,7 +156,11 @@ func TestFind(t *testing.T) {
 	self := touch("starter.exe")
 	b := touch("b.exe")
 	sub := touch(filepath.Join("bin", "c.exe"))
+	inApp := touch(filepath.Join("app", "d.exe"))
+	nextTo := touch("e.exe")
+	touch(filepath.Join("app", "e.exe"))
 	os.Mkdir(filepath.Join(dir, "ordner.exe"), 0o755)
+	app := filepath.Join(dir, "app")
 
 	cfg := func(exes ...string) *Config {
 		c := &Config{}
@@ -166,36 +170,46 @@ func TestFind(t *testing.T) {
 		return c
 	}
 	for _, c := range []struct {
-		name string
-		cfg  *Config
-		want string
+		name     string
+		cfg      *Config
+		exe, app string
 	}{
-		{"erstes vorhandenes", cfg("a.exe", "b.exe", "bin/c.exe"), b},
-		{"Unterordner", cfg("bin/c.exe", "b.exe"), sub},
-		{"absoluter Pfad", cfg(b), b},
-		{"Ordner zählt nicht", cfg("ordner.exe", "b.exe"), b},
-		{"Starter zählt nicht", cfg("starter.exe", "b.exe"), b},
+		{"erstes vorhandenes", cfg("a.exe", "b.exe", "bin/c.exe"), b, dir},
+		{"Unterordner", cfg("bin/c.exe", "b.exe"), sub, dir},
+		{"absoluter Pfad", cfg(b), b, dir},
+		{"Ordner zählt nicht", cfg("ordner.exe", "b.exe"), b, dir},
+		{"Starter zählt nicht", cfg("starter.exe", "b.exe"), b, dir},
+		{"im Ordner app", cfg("a.exe", "d.exe", "b.exe"), inApp, app},
+		{"neben dem Starter vor app", cfg("e.exe"), nextTo, dir},
 	} {
-		_, got, err := c.cfg.Find(dir, self)
-		if err != nil || got != c.want {
-			t.Errorf("%s: %q %v, erwartet %q", c.name, got, err, c.want)
+		got, err := c.cfg.Find(dir, self)
+		if err != nil || got.Exe != c.exe || got.App != c.app || got.Dir != dir {
+			t.Errorf("%s: %+v %v, erwartet %q in %q", c.name, got, err, c.exe, c.app)
 		}
 	}
 
-	_, _, err := cfg("a.exe", "starter.exe").Find(dir, self)
+	_, err := cfg("a.exe", "starter.exe").Find(dir, self)
 	wantProblem(t, err, "config.notfound", "• a.exe\n• starter.exe")
 
-	// „vorher“-Programme müssen da sein und dürfen nicht der Starter sein
-	withBefore := func(before string) *Config {
-		c := cfg("a.exe", "b.exe")
-		c.Programs[1].Before = []Program{{Exe: "bin/c.exe"}, {Exe: before}}
+	// „vorher“-Programme gelten ab dem Ordner des Programms, müssen da sein
+	// und dürfen nicht der Starter sein
+	withBefore := func(exe string, before ...string) *Config {
+		c := cfg("a.exe", exe)
+		for _, b := range before {
+			c.Programs[1].Before = append(c.Programs[1].Before, Program{Exe: b})
+		}
 		return c
 	}
-	if _, got, err := withBefore("b.exe").Find(dir, self); err != nil || got != b {
-		t.Errorf("vorher vorhanden: %q %v", got, err)
+	if got, err := withBefore("b.exe", "bin/c.exe", "b.exe").Find(dir, self); err != nil || got.Exe != b {
+		t.Errorf("vorher vorhanden: %+v %v", got, err)
 	}
-	_, _, err = withBefore("fehlt.exe").Find(dir, self)
+	if got, err := withBefore("d.exe", "e.exe").Find(dir, self); err != nil || got.App != app {
+		t.Errorf("vorher im Ordner app: %+v %v", got, err)
+	}
+	_, err = withBefore("d.exe", "b.exe").Find(dir, self) // b.exe liegt nur neben dem Starter
+	wantProblem(t, err, "program.missing", "2 (vorher 1)", "b.exe")
+	_, err = withBefore("b.exe", "bin/c.exe", "fehlt.exe").Find(dir, self)
 	wantProblem(t, err, "program.missing", "2 (vorher 2)", "fehlt.exe")
-	_, _, err = withBefore("starter.exe").Find(dir, self)
+	_, err = withBefore("b.exe", "bin/c.exe", "starter.exe").Find(dir, self)
 	wantProblem(t, err, "program.self", "2 (vorher 2)")
 }

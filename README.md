@@ -26,6 +26,22 @@ Ordner `profile`.
 
 **Update:** neue EXE drüberkopieren. `config_starter.json` und die Daten bleiben.
 
+## Zwei Aufbauten
+
+```text
+Alles in einem Ordner          Programm eine Ebene tiefer
+drawio\                        drawio\
+├── draw.io.exe                ├── app\                ← Programm, beim Update ersetzen
+├── portable_drawio.exe        │   └── draw.io.exe
+├── config_starter.json        ├── daten\              ← Einstellungen
+└── daten\                     ├── lib\                ← falls nötig
+                               ├── portable_drawio.exe
+                               └── config_starter.json
+```
+
+Der Starter sucht die EXE neben sich, sonst im Unterordner `app`. Arbeitsordner
+und Daten liegen in beiden Fällen beim Starter – ein Update tauscht nur `app\`.
+
 ## config_starter.json
 
 ```json
@@ -47,9 +63,9 @@ Ordner `profile`.
   Eine Datei passt so für viele Programme.
 - `exe` – Dateiname, auch mit Unterordner: `bin/programm.exe`.
 - `parameter` – ein Eintrag je Parameter. Leerzeichen brauchen keine Anführungszeichen.
+- Relative Pfade gelten ab dem Starter – dort landen auch die Daten.
 - `{ordner}` – Ordner des Starters. `{daten}` – dessen Unterordner `daten`, wird angelegt.
-- Relative Pfade gelten ab dem Ordner des Programms. Liegt die EXE in einem
-  Unterordner, Pfade ab dem Starter mit `{ordner}/…` schreiben.
+- `{app}` – Ordner mit den Programmdateien: `app\`, sonst der Ordner des Starters.
 - Dateien, die man auf den Starter zieht, bekommt das Programm mit.
 
 Braucht ein Programm vorher ein anderes, startet `vorher` dieses zuerst;

@@ -102,7 +102,7 @@ func buildDefault(version [4]uint16, cfg []byte) error {
 }
 
 // buildFor legt in folder portable_<programm>.exe mit Icon und Namen des
-// Programms ab, das der Starter dort starten wird.
+// Programms ab, das der Starter dort starten wird – neben ihm oder in app\.
 func buildFor(folder string, version [4]uint16, example []byte) error {
 	cfgPath := filepath.Join(folder, classes.ConfigName)
 	data, err := os.ReadFile(cfgPath)
@@ -116,20 +116,20 @@ func buildFor(folder string, version [4]uint16, example []byte) error {
 	if err != nil {
 		return err
 	}
-	program, exe, err := cfg.Find(folder, "")
+	target, err := cfg.Find(folder, "")
 	if err != nil {
 		return err
 	}
 
-	images, source, err := iconFor(folder, exe)
+	images, source, err := iconFor(folder, target.Exe)
 	if err != nil {
 		return err
 	}
-	name := productName(exe)
+	name := productName(target.Exe)
 	if name == "" {
 		name = filepath.Base(folder)
 	}
-	file := "portable_" + slug(program.Exe) + ".exe"
+	file := "portable_" + slug(target.Exe) + ".exe"
 	if err := writeSyso(resInfo{images, version, name + " portable", file}, syso); err != nil {
 		return err
 	}

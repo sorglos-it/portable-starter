@@ -24,12 +24,13 @@ func TestPath(t *testing.T) {
 
 func TestArguments(t *testing.T) {
 	dir := t.TempDir()
-	p := Program{Parameters: []string{"--user-data-dir={daten}", "--root={Ordner}", "mit Leerzeichen", "{8E0F7A12-BFB3}"}}
-	got, err := p.Arguments(dir, nil)
+	app := filepath.Join(dir, AppDir)
+	p := Program{Parameters: []string{"--user-data-dir={daten}", "--root={Ordner}", "--lang={APP}/lang/", "mit Leerzeichen", "{8E0F7A12-BFB3}"}}
+	got, err := p.Arguments(dir, app, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"--user-data-dir=" + filepath.Join(dir, DataDir), "--root=" + dir, "mit Leerzeichen", "{8E0F7A12-BFB3}"}
+	want := []string{"--user-data-dir=" + filepath.Join(dir, DataDir), "--root=" + dir, "--lang=" + app + "/lang/", "mit Leerzeichen", "{8E0F7A12-BFB3}"}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("%q, erwartet %q", got, want)
 	}
@@ -40,7 +41,7 @@ func TestArguments(t *testing.T) {
 
 func TestArgumentsWithoutDataKeepsFolderClean(t *testing.T) {
 	dir := t.TempDir()
-	if _, err := (Program{Parameters: []string{"--datadir", "profile"}}).Arguments(dir, nil); err != nil {
+	if _, err := (Program{Parameters: []string{"--datadir", "profile"}}).Arguments(dir, dir, nil); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(filepath.Join(dir, DataDir)); !os.IsNotExist(err) {
@@ -60,7 +61,7 @@ func TestArgumentsMakesExtraFilesAbsolute(t *testing.T) {
 	}
 	t.Cleanup(func() { os.Chdir(old) })
 	os.WriteFile("plan.drawio", nil, 0o644)
-	got, err := (Program{}).Arguments(t.TempDir(), []string{"plan.drawio", ".", "--neu", `C:\x.txt`})
+	got, err := (Program{}).Arguments(t.TempDir(), t.TempDir(), []string{"plan.drawio", ".", "--neu", `C:\x.txt`})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,6 +74,6 @@ func TestArgumentsMakesExtraFilesAbsolute(t *testing.T) {
 func TestArgumentsReportsDataDirError(t *testing.T) {
 	dir := t.TempDir()
 	os.WriteFile(filepath.Join(dir, DataDir), nil, 0o644) // Datei statt Ordner
-	_, err := (Program{Parameters: []string{"{daten}"}}).Arguments(dir, nil)
+	_, err := (Program{Parameters: []string{"{daten}"}}).Arguments(dir, dir, nil)
 	wantProblem(t, err, "start.datadir")
 }

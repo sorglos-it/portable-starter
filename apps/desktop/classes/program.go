@@ -95,7 +95,7 @@ func (p Program) check(where string) error {
 	}
 	for _, arg := range p.Parameters {
 		for _, m := range placeholder.FindAllStringSubmatch(arg, -1) {
-			if name := strings.ToLower(m[1]); name != "ordner" && name != "daten" {
+			if name := strings.ToLower(m[1]); name != "ordner" && name != "daten" && name != "app" {
 				return problem("program.placeholder", where, m[0])
 			}
 		}
@@ -103,19 +103,20 @@ func (p Program) check(where string) error {
 	return nil
 }
 
-// Path ist der absolute Pfad der EXE; relative Angaben gelten ab dir.
-func (p Program) Path(dir string) string {
+// Path ist der absolute Pfad der EXE; relative Angaben gelten ab root.
+func (p Program) Path(root string) string {
 	exe := filepath.FromSlash(p.Exe)
 	if filepath.IsAbs(exe) {
 		return filepath.Clean(exe)
 	}
-	return filepath.Join(dir, exe)
+	return filepath.Join(root, exe)
 }
 
-// Arguments setzt {ordner} und {daten} ein und hängt extra an – das sind
-// Dateien, die auf den Starter gezogen oder mit ihm geöffnet wurden.
-// Kommt {daten} vor, legt Arguments den Datenordner an.
-func (p Program) Arguments(dir string, extra []string) ([]string, error) {
+// Arguments setzt {ordner} (dir, Ordner des Starters), {daten} (dessen
+// Unterordner daten) und {app} (Ordner der Programmdateien) ein und hängt
+// extra an – das sind Dateien, die auf den Starter gezogen oder mit ihm
+// geöffnet wurden. Kommt {daten} vor, legt Arguments den Datenordner an.
+func (p Program) Arguments(dir, app string, extra []string) ([]string, error) {
 	data := filepath.Join(dir, DataDir)
 	args := make([]string, 0, len(p.Parameters)+len(extra))
 	for _, arg := range p.Parameters {
@@ -124,6 +125,8 @@ func (p Program) Arguments(dir string, extra []string) ([]string, error) {
 			switch strings.ToLower(m[1 : len(m)-1]) {
 			case "ordner":
 				return dir
+			case "app":
+				return app
 			case "daten":
 				if err := os.MkdirAll(data, 0o755); err != nil {
 					mkErr = err
@@ -143,33 +146,9 @@ func (p Program) Arguments(dir string, extra []string) ([]string, error) {
 	return args, nil
 }
 
-// Start startet erst die „vorher“-Programme, jeweils mit ihrer Pause, dann das
-// Programm selbst mit seinen Parametern und extra. exe ist der Pfad, den
-// Config.Find geliefert hat.
-func (p Program) Start(exe, dir string, extra []string) error {
-	for _, b := range p.Before {
-		if err := b.launch(b.Path(dir), dir, nil); err != nil {
-			return err
-		}
-		time.Sleep(b.Wait)
-	}
-	return p.launch(exe, dir, extra)
-}
-
-func (p Program) launch(exe, dir string, extra []string) error {
-	args, err := p.Arguments(dir, extra)
-	if err != nil {
-		return err
-	}
-	if err := Launch(exe, args); err != nil {
-		return problem("start.failed", p.Exe, err)
-	}
-	return nil
-}
-
 // absPath macht den Pfad einer vorhandenen Datei oder eines Ordners absolut:
-// Das Programm läuft in seinem eigenen Ordner, dort zeigte ein relativer Pfad
-// ins Leere.
+// Das Programm läuft im Ordner des Starters, dort zeigte ein relativer Pfad
+// des Aufrufers ins Leere.
 func absPath(arg string) string {
 	if filepath.IsAbs(arg) {
 		return arg

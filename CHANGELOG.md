@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.0 – 22.09.2026
+
+- Das Programm darf im Unterordner `app` liegen, der Starter eine Ebene darüber.
+- Arbeitsordner ist immer der Ordner des Starters: relative Pfade und Daten landen dort,
+  in beiden Aufbauten gleich.
+- Neuer Platzhalter `{app}` für den Ordner mit den Programmdateien (QElectroTech nutzt ihn).
+
 ## 1.0.0 – 21.09.2026
 
 - Ein Starter für alle portablen Programme, gesteuert über `config_starter.json`.
