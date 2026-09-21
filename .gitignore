@@ -1,0 +1,18 @@
+# Erzeugtes
+dist/
+bin/
+obj/
+.pio/
+apps/*/*.syso
+
+# Laufzeitdaten - Ausnahme: Firmware-Dateisystem
+apps/*/data/
+!apps/firmware*/data/
+
+# Echte Konfiguration und Secrets - nur *.example kommt ins Repo
+apps/*/config/*
+!apps/*/config/*.example
+apps/firmware*/include/config.h
+
+# Fremdcode per Paketmanager
+apps/*/vendor/

@@ -1,0 +1,20 @@
+{
+  "title": "Portable Starter",
+  "edit": "config_starter.json jetzt im Editor öffnen?",
+  "config.read": "config_starter.json lässt sich nicht lesen:\n%v",
+  "config.size": "config_starter.json ist zu groß (höchstens 1 MB).",
+  "config.syntax": "config_starter.json hat einen Fehler in Zeile %d, Zeichen %d.\n\nHäufige Ursachen:\n• Komma nach dem letzten Eintrag\n• fehlendes Anführungszeichen\n• einfacher Backslash – \\\\ oder / schreiben",
+  "config.format": "config_starter.json muss so aufgebaut sein:\n{ \"programme\": [ { \"exe\": \"programm.exe\" } ] }",
+  "config.key": "config_starter.json: „%s“ ist unbekannt. Erlaubt ist nur „programme“.",
+  "config.list": "config_starter.json: „programme“ muss eine Liste in [ ] sein.",
+  "config.empty": "In config_starter.json ist kein Programm eingetragen.",
+  "config.notfound": "Keines dieser Programme liegt im Ordner des Starters:\n\n%s\n\nStarter in den Programmordner kopieren oder die richtige EXE in config_starter.json eintragen.",
+  "program.format": "config_starter.json, Programm %d: Der Eintrag muss in { } stehen.",
+  "program.key": "config_starter.json, Programm %d: „%s“ ist unbekannt. Erlaubt sind „exe“ und „parameter“.",
+  "program.exe": "config_starter.json, Programm %d: „exe“ fehlt oder ist leer.",
+  "program.notexe": "config_starter.json, Programm %d: „%s“ ist keine .exe-Datei. Der Starter startet nur .exe-Dateien.",
+  "program.parameter": "config_starter.json, Programm %d: „parameter“ muss eine Liste aus Texten sein, z. B. [\"--datadir\", \"profile\"].",
+  "program.placeholder": "config_starter.json, Programm %d: Platzhalter „%s“ ist unbekannt. Erlaubt sind {ordner} und {daten}.",
+  "start.datadir": "Der Ordner „%s“ lässt sich nicht anlegen:\n%v",
+  "start.failed": "„%s“ lässt sich nicht starten:\n%v"
+}

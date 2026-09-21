@@ -1,0 +1,20 @@
+{
+  "title": "Portable Starter",
+  "edit": "Open config_starter.json in Notepad now?",
+  "config.read": "config_starter.json cannot be read:\n%v",
+  "config.size": "config_starter.json is too large (1 MB at most).",
+  "config.syntax": "config_starter.json has an error in line %d, character %d.\n\nCommon causes:\n• a comma after the last entry\n• a missing quotation mark\n• a single backslash – write \\\\ or /",
+  "config.format": "config_starter.json must look like this:\n{ \"programme\": [ { \"exe\": \"program.exe\" } ] }",
+  "config.key": "config_starter.json: \"%s\" is unknown. Only \"programme\" is allowed.",
+  "config.list": "config_starter.json: \"programme\" must be a list in [ ].",
+  "config.empty": "config_starter.json does not list any program.",
+  "config.notfound": "None of these programs is in the starter's folder:\n\n%s\n\nCopy the starter into the program's folder or enter the right EXE in config_starter.json.",
+  "program.format": "config_starter.json, program %d: the entry must be enclosed in { }.",
+  "program.key": "config_starter.json, program %d: \"%s\" is unknown. Allowed are \"exe\" and \"parameter\".",
+  "program.exe": "config_starter.json, program %d: \"exe\" is missing or empty.",
+  "program.notexe": "config_starter.json, program %d: \"%s\" is not an .exe file. The starter only starts .exe files.",
+  "program.parameter": "config_starter.json, program %d: \"parameter\" must be a list of texts, e.g. [\"--datadir\", \"profile\"].",
+  "program.placeholder": "config_starter.json, program %d: placeholder \"%s\" is unknown. Allowed are {ordner} (starter folder) and {daten} (data folder).",
+  "start.datadir": "The folder \"%s\" cannot be created:\n%v",
+  "start.failed": "\"%s\" cannot be started:\n%v"
+}

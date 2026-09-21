@@ -1,0 +1,20 @@
+{
+  "programme": [
+    {
+      "exe": "draw.io.exe",
+      "parameter": ["--user-data-dir={daten}", "--disable-update"]
+    },
+    {
+      "exe": "drawio.exe",
+      "parameter": ["--user-data-dir={daten}", "--disable-update"]
+    },
+    {
+      "exe": "orca-slicer.exe",
+      "parameter": ["--datadir", "profile"]
+    },
+    {
+      "exe": "CrealityPrint.exe",
+      "parameter": ["--datadir", "profile"]
+    }
+  ]
+}
