@@ -272,7 +272,7 @@ func versionInfo(info resInfo) []byte {
 		{"FileDescription", info.description},
 		{"FileVersion", version},
 		{"InternalName", strings.TrimSuffix(info.filename, ".exe")},
-		{"LegalCopyright", "© Thomas Weirich, MIT-Lizenz"},
+		{"LegalCopyright", "© Sorglos Thomas Weirich, MIT-Lizenz"},
 		{"OriginalFilename", info.filename},
 		{"ProductName", "Portable Starter"},
 		{"ProductVersion", version},
