@@ -4,52 +4,55 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Donate with PayPal](https://img.shields.io/badge/Donate-PayPal-00457C?logo=paypal&logoColor=white)](https://www.paypal.com/donate/?hosted_button_id=6CDEVZGJWTNQQ)
 
-Ein Starter für alle portablen Windows-Programme. Er startet das Programm so,
-dass dessen Einstellungen im Programmordner bleiben statt im Benutzerprofil.
-Welches Programm mit welchen Parametern, steht in `config_starter.json`.
+One starter for all portable Windows programs. It starts the program so that
+its settings stay in the program folder instead of the user profile.
+Which program runs with which parameters is set in `config_starter.json`.
 
-| Ordner | Zweck | Sprache | Start | Build |
+| Folder | Purpose | Language | Start | Build |
 | --- | --- | --- | --- | --- |
-| `apps/desktop` | Starter `starter.exe` | Go | `dist\starter.exe` | `tools\build.bat` |
+| `apps/desktop` | the starter, `starter.exe` | Go | `dist\starter.exe` | `tools\build.bat` |
 
-## Start in 3 Schritten
+## Start in 3 steps
 
-1. Aus `dist\` den passenden Starter in den Ordner des Programms kopieren, z. B.
-   `portable_drawio.exe` neben `draw.io.exe`. Für andere Programme `starter.exe` –
-   der Name ist frei.
-2. Doppelklicken. Beim ersten Start legt der Starter `config_starter.json` an.
-3. Fehlt das Programm dort, EXE und Parameter eintragen – der Starter bietet an, die Datei zu öffnen.
+1. Copy the matching starter from `dist\` into the program's folder, e.g.
+   `portable_drawio.exe` next to `draw.io.exe`. For other programs take `starter.exe` –
+   any name will do.
+2. Double-click it. On the first start the starter creates `config_starter.json`.
+3. If the program is not listed there, enter its EXE and parameters – the starter offers to open the file.
 
-Schon eingetragen und in `dist\` fertig mit eigenem Icon: draw.io, OrcaSlicer,
-Creality Print, PrusaSlicer, QElectroTech, Mullvad Browser und ecoDMS. Wer bisher
-`OrcaSlicerPortableStarter`, `CrealityPrintPortableStarter` oder `PrusaSlicerPortable`
-nutzt, behält seinen Ordner `profile`.
+Already listed, and ready in `dist\` with their own icon: draw.io, OrcaSlicer,
+Creality Print, PrusaSlicer, QElectroTech, Mullvad Browser and ecoDMS. Coming from
+`OrcaSlicerPortableStarter`, `CrealityPrintPortableStarter` or `PrusaSlicerPortable`?
+Your `profile` folder stays in use.
 
-**Update:** neue EXE drüberkopieren. `config_starter.json` und die Daten bleiben.
+**Update:** copy the new EXE over the old one. `config_starter.json` and the data stay.
 
-## Zwei Aufbauten
+## Two layouts
 
 ```text
-Alles in einem Ordner          Programm eine Ebene tiefer
+Everything in one folder       Program one level down
 drawio\                        drawio\
-├── draw.io.exe                ├── app\                ← Programm, beim Update ersetzen
+├── draw.io.exe                ├── app\                ← program, replaced on update
 ├── portable_drawio.exe        │   └── draw.io.exe
-├── config_starter.json        ├── daten\              ← Einstellungen
-└── daten\                     ├── lib\                ← falls nötig
+├── config_starter.json        ├── daten\              ← settings
+└── daten\                     ├── lib\                ← if needed
                                ├── portable_drawio.exe
                                └── config_starter.json
 ```
 
-Der Starter sucht die EXE neben sich, sonst im Unterordner `app`. Arbeitsordner
-und Daten liegen in beiden Fällen beim Starter – ein Update tauscht nur `app\`.
+The starter looks for the EXE next to itself, otherwise in the subfolder `app`. The working
+folder and the data are next to the starter in both cases – an update only replaces `app\`.
 
-**Umziehen:** Programmdateien nach `app\` verschieben; Starter, JSON und
-Datenordner bleiben oben. Danach `tools\verknuepfungen.bat` doppelklicken und den
-Programmordner wählen: Startmenü-Einträge, Dateitypen und Deinstallationseinträge,
-die ins Leere zeigen, gehen dann auf den Starter oder den neuen Ort in `app\`.
-Das Werkzeug zeigt vorher alles, sichert es unter Dokumente und fragt nach.
+**Moving to the second layout:** move the program files into `app\`; starter, JSON and
+data folder stay on top. Then double-click `tools\verknuepfungen.bat` and pick the program
+folder: Start menu entries, file types and uninstall entries that now point nowhere are
+redirected to the starter or to the new place in `app\`. The tool shows everything first,
+backs it up in your Documents folder and asks before it changes anything.
 
 ## config_starter.json
+
+The key names are German: `programme` (programs), `vorher` (before), `warten` (wait);
+the placeholders `{ordner}` (folder) and `{daten}` (data).
 
 ```json
 {
@@ -66,17 +69,17 @@ Das Werkzeug zeigt vorher alles, sichert es unter Dokumente und fragt nach.
 }
 ```
 
-- Der Starter nimmt das **erste** Programm der Liste, das in seinem Ordner liegt.
-  Eine Datei passt so für viele Programme.
-- `exe` – Dateiname, auch mit Unterordner: `bin/programm.exe`.
-- `parameter` – ein Eintrag je Parameter. Leerzeichen brauchen keine Anführungszeichen.
-- Relative Pfade gelten ab dem Starter – dort landen auch die Daten.
-- `{ordner}` – Ordner des Starters. `{daten}` – dessen Unterordner `daten`, wird angelegt.
-- `{app}` – Ordner mit den Programmdateien: `app\`, sonst der Ordner des Starters.
-- Dateien, die man auf den Starter zieht, bekommt das Programm mit.
+- The starter takes the **first** program in the list that is in its folder.
+  So one file fits many programs.
+- `exe` – file name, also with a subfolder: `bin/program.exe`.
+- `parameter` – one entry per parameter. Spaces need no quotation marks.
+- Relative paths start at the starter – that is also where the data ends up.
+- `{ordner}` – the starter's folder. `{daten}` – its subfolder `daten`, created if missing.
+- `{app}` – the folder with the program files: `app\`, otherwise the starter's folder.
+- Files dropped onto the starter are passed on to the program.
 
-Braucht ein Programm vorher ein anderes, startet `vorher` dieses zuerst;
-`warten` ist die Pause danach in Sekunden (0 bis 60):
+If a program needs another one running first, `vorher` starts that one first;
+`warten` is the pause afterwards in seconds (0 to 60):
 
 ```json
 {
@@ -87,42 +90,42 @@ Braucht ein Programm vorher ein anderes, startet `vorher` dieses zuerst;
 }
 ```
 
-Fehler in der Datei meldet der Starter mit Zeile und Zeichen.
+Mistakes in the file are reported with line and character.
 
-## Starter mit dem Icon des Programms
+## Starter with the program's icon
 
-Programmordner auf `tools\build.bat` ziehen, gern mehrere auf einmal:
+Drag program folders onto `tools\build.bat`, several at once if you like:
 
 ```bat
 tools\build.bat "D:\Apps\drawio" "D:\Apps\OrcaSlicer"
 ```
 
-Jeder Ordner bekommt `portable_<programm>.exe` mit Icon und Namen des
-Programms, das der Starter dort findet – fehlt `config_starter.json`, kommt
-sie dazu. Hat die EXE kein Icon, nimmt das Werkzeug eine gleichnamige
-`.ico` aus dem Programmordner, sonst das Standard-Icon. Eine Kopie landet in `dist\`.
+Each folder gets `portable_<program>.exe` with the icon and name of the
+program the starter finds there – if `config_starter.json` is missing, it is
+added. If the EXE has no icon, the tool takes an `.ico` of the same name from the
+program folder, otherwise the default icon. A copy goes to `dist\`.
 
-## Bauen
+## Build
 
-Voraussetzung ist [Go](https://go.dev/dl/) ab 1.24, sonst nichts.
-`tools\build.bat` ohne Angabe prüft, testet und legt `starter.exe` und
-`config_starter.json` in `dist\` ab. `dist\` liegt mit im Repo – wer nur
-starten will, braucht kein Go.
+The only requirement is [Go](https://go.dev/dl/) 1.24 or later.
+`tools\build.bat` without arguments checks, tests and puts `starter.exe` and
+`config_starter.json` into `dist\`. `dist\` is part of the repo – to just
+start programs, you don't need Go.
 
-## Sicherheit
+## Security
 
-- Startet nur `.exe`-Dateien und nie sich selbst.
-- Läuft mit normalen Rechten. Verlangt ein Programm Adminrechte, fragt Windows – wie beim Doppelklick.
-- Lädt Systembibliotheken nur aus `System32`, nie aus dem Programmordner.
-- Kein Netzwerk, keine Registry. Der Starter beendet sich, sobald das Programm läuft.
+- Starts only `.exe` files and never itself.
+- Runs with normal rights. If a program needs admin rights, Windows asks – as with a double-click.
+- Loads system libraries only from `System32`, never from the program folder.
+- No network, no registry. The starter exits as soon as the program is running.
 
 ## Donate via PayPal
 
-Wenn dir der Starter Arbeit spart, freue ich mich über eine Spende. Danke!
+If the starter saves you work, a donation is very welcome. Thank you!
 
 [![Donate with PayPal](https://img.shields.io/badge/Donate-PayPal-00457C?logo=paypal&logoColor=white&style=for-the-badge)](https://www.paypal.com/donate/?hosted_button_id=6CDEVZGJWTNQQ)
 
-## Lizenz
+## License
 
-[MIT](LICENSE). Nicht verbunden mit den Herstellern der gestarteten Programme –
-deren Namen und Icons in `dist\portable_*.exe` gehören ihnen.
+[MIT](LICENSE). Not affiliated with the makers of the programs it starts –
+their names and icons in `dist\portable_*.exe` belong to them.
