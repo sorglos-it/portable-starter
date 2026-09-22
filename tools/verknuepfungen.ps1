@@ -3,7 +3,7 @@
 #   - Programm, das der Starter startet  -> portable_*.exe (öffnet dann portabel)
 #   - andere verschobene Datei           -> neuer Ort in app\ (z. B. Uninstall.exe)
 #   - Symbol (DefaultIcon, DisplayIcon)  -> neuer Ort in app\, gleiche Nummer
-#   - verschwundener alter Starter       -> portable_*.exe
+#   - verschwundener alter Starter       -> portable_*.exe (nie ein Deinstallationsprogramm)
 # Fasst nur Einträge an, deren Ziel fehlt. Zeigt erst alles, sichert es und
 # ändert nur nach „J“. Adminrechte fordert es nur für systemweite Einträge an.
 #
@@ -16,11 +16,60 @@ param(
     [string[]] $Verknuepfungsorte,    # statt Desktop, Startmenü und Taskleiste
     [string[]] $Registryorte,         # statt Dateitypen und Deinstallationseinträgen
     [string] $Sicherung,              # statt Dokumente\portable-starter-sicherung\<Zeit>
-    [switch] $Erhoeht                 # intern: läuft im Admin-Fenster
+    [string] $Plan                    # intern: Admin-Fenster stellt die systemweiten Einträge aus dieser Datei um
 )
 
 # Das Admin-Fenster bleibt am Ende stehen, damit man das Ergebnis lesen kann.
-function Wait-Enter { if ((-not $Ja -and -not $NurZeigen) -or $Erhoeht) { Write-Host ''; [void](Read-Host 'Enter zum Schließen') } }
+function Wait-Enter { if ((-not $Ja -and -not $NurZeigen) -or $Plan) { Write-Host ''; [void](Read-Host 'Enter zum Schließen') } }
+
+$wsh = New-Object -ComObject WScript.Shell
+$machineDirs = @([Environment]::GetFolderPath('CommonDesktopDirectory'), [Environment]::GetFolderPath('CommonStartMenu')) | Where-Object { $_ }
+
+# Set-Entries stellt Einträge um und liefert die Zahl der Fehler.
+function Set-Entries($list) {
+    $failed = 0
+    foreach ($c in $list) {
+        try {
+            if ($c.Art -eq 'Verknüpfung') {
+                $lnk = $wsh.CreateShortcut($c.Ort)
+                $lnk.TargetPath = $c.Neu
+                $lnk.WorkingDirectory = $c.Arbeitsordner
+                if ($c.Icon) { $lnk.IconLocation = $c.Icon }
+                $lnk.Save()
+            } else {
+                $hive, $sub = $c.Ort -split '\\', 2
+                $rootKey = [Microsoft.Win32.Registry]::CurrentUser
+                if ($hive -eq 'HKEY_LOCAL_MACHINE') { $rootKey = [Microsoft.Win32.Registry]::LocalMachine }
+                $rk = $rootKey.OpenSubKey($sub, $true)
+                $rk.SetValue($c.Wert, $c.Neu, [Microsoft.Win32.RegistryValueKind]$c.Kind)
+                $rk.Close()
+            }
+        } catch {
+            $failed++
+            Write-Host "FEHLER $($c.Ort): $($_.Exception.Message)" -ForegroundColor Red
+        }
+    }
+    if (Test-Path "$env:SystemRoot\System32\ie4uinit.exe") { & "$env:SystemRoot\System32\ie4uinit.exe" -show | Out-Null }
+    return $failed
+}
+
+# --- Admin-Fenster: nur die systemweiten Einträge aus dem Plan -------------
+# Es sucht nicht selbst: Netzlaufwerke sieht es nicht, und mit einem eigenen
+# Admin-Konto wären Desktop, Startmenü und HKCU die des Admins. Angenommen wird
+# nur, was systemweit ist – der Plan liegt in %TEMP%.
+if ($Plan) {
+    $keyRoot = '^HKEY_LOCAL_MACHINE\\SOFTWARE\\(Classes|(WOW6432Node\\)?Microsoft\\Windows\\CurrentVersion\\Uninstall)\\'
+    $todo = @(Get-Content -LiteralPath $Plan -Raw -Encoding UTF8 | ConvertFrom-Json | ForEach-Object { $_ } | Where-Object {
+            $ort = [string]$_.Ort
+            ($_.Art -eq 'Registry' -and $ort -match $keyRoot) -or
+            ($_.Art -eq 'Verknüpfung' -and $ort -like '*.lnk' -and ($machineDirs | Where-Object { $ort.StartsWith($_ + '\', [StringComparison]::OrdinalIgnoreCase) }))
+        })
+    Remove-Item -LiteralPath $Plan -ErrorAction SilentlyContinue
+    $failed = Set-Entries $todo
+    Write-Host ''
+    Write-Host ("{0} systemweite Einträge umgestellt, {1} Fehler." -f ($todo.Count - $failed), $failed) -ForegroundColor Green
+    Wait-Enter; exit
+}
 
 # --- Programmordner: enthalten app\ und eine portable_*.exe -----------------
 if (-not $Ordner) {
@@ -60,7 +109,8 @@ foreach ($base in $bases) {
 }
 
 # Get-NewPath liefert für einen fehlenden Pfad unter einem Programmordner den
-# neuen Pfad; context „start“ für Aufrufe, „icon“ für Symbole.
+# neuen Pfad; context „start“ für Aufrufe, „icon“ für Symbole, „uninstall“ für
+# Deinstallationseinträge (nur verschobene Dateien, nie der Starter).
 function Get-NewPath([string] $path, [string] $context) {
     if (-not $path -or (Test-Path -LiteralPath $path)) { return $null }
     foreach ($base in $bases) {
@@ -72,9 +122,11 @@ function Get-NewPath([string] $path, [string] $context) {
             if (Test-Path -LiteralPath $inApp) { return $inApp }
             return $starter
         }
-        if ($programs[$base] -contains $rel.ToLowerInvariant()) { return $starter }
+        if ($context -eq 'start' -and $programs[$base] -contains $rel.ToLowerInvariant()) { return $starter }
         if (Test-Path -LiteralPath $inApp) { return $inApp }
-        if ($rel -match '\.(exe|bat|cmd)$') { return $starter }   # alter Starter
+        # Verschwundener alter Starter: lag direkt im Programmordner. Deinstallations-
+        # programme nie – „Deinstallieren“ öffnete sonst das Programm.
+        if ($context -eq 'start' -and $rel -match '^[^\\]+\.(exe|bat|cmd)$' -and $rel -notmatch '^unins') { return $starter }
     }
     return $null
 }
@@ -82,8 +134,6 @@ function Get-NewPath([string] $path, [string] $context) {
 $changes = New-Object System.Collections.Generic.List[object]
 
 # --- Verknüpfungen --------------------------------------------------------
-$wsh = New-Object -ComObject WScript.Shell
-$machineDirs = @([Environment]::GetFolderPath('CommonDesktopDirectory'), [Environment]::GetFolderPath('CommonStartMenu')) | Where-Object { $_ }
 if (-not $Verknuepfungsorte) {
     $Verknuepfungsorte = @([Environment]::GetFolderPath('Desktop'), [Environment]::GetFolderPath('StartMenu'),
         (Join-Path $env:APPDATA 'Microsoft\Internet Explorer\Quick Launch')) + $machineDirs
@@ -132,6 +182,7 @@ foreach ($key in $keys.Keys) {
         $data = [string]$item.GetValue($name, $null, 'DoNotExpandEnvironmentNames')
         $context = 'start'
         if ($key -match '\\DefaultIcon$' -or $name -eq 'DisplayIcon') { $context = 'icon' }
+        elseif ($key -match '\\Uninstall\\') { $context = 'uninstall' }
         $new = [regex]::Replace($data, $pathPattern, [System.Text.RegularExpressions.MatchEvaluator] {
                 param($m)
                 $n = Get-NewPath $m.Value $context
@@ -166,30 +217,15 @@ if (-not $Ja) {
     if ((Read-Host 'Jetzt umstellen? (J/N)') -notmatch '^[jJyY]') { Write-Host 'Nichts geändert.'; Wait-Enter; exit }
 }
 
-# Systemweite Einträge brauchen Adminrechte. Das Admin-Fenster sieht keine
-# Netzlaufwerke, deshalb läuft es mit einer Kopie des Skripts aus %TEMP%.
-$machineCount = @($changes | Where-Object Maschine).Count
-if ($machineCount -gt 0 -and -not $isAdmin -and -not $Erhoeht) {
-    $copy = Join-Path $env:TEMP 'portable-starter-verknuepfungen.ps1'
-    Copy-Item -LiteralPath $PSCommandPath -Destination $copy -Force
-    $argList = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$copy`"", '-Ja', '-Erhoeht') + ($bases | ForEach-Object { "`"$_`"" })
-    try {
-        Start-Process powershell.exe -Verb RunAs -ArgumentList $argList -Wait
-        exit
-    } catch {
-        Write-Host "Ohne Adminrechte bleiben $machineCount systemweite Einträge unverändert." -ForegroundColor Yellow
-    }
-}
-$todo = @($changes | Where-Object { $isAdmin -or -not $_.Maschine })
-
 # --- Sichern und umstellen --------------------------------------------------
+# Gesichert wird vorab alles, auch Systemweites – lesen darf jeder.
 if (-not $Sicherung) {
     $Sicherung = Join-Path ([Environment]::GetFolderPath('MyDocuments')) ('portable-starter-sicherung\' + (Get-Date -Format 'yyyy-MM-dd_HHmmss'))
 }
 try {
     New-Item -ItemType Directory -Path $Sicherung -Force -ErrorAction Stop | Out-Null
     $i = 0
-    foreach ($c in $todo) {
+    foreach ($c in $changes) {
         $i++
         if ($c.Art -eq 'Verknüpfung') {
             Copy-Item -LiteralPath $c.Ort -Destination (Join-Path $Sicherung ('{0:D2}_{1}' -f $i, (Split-Path $c.Ort -Leaf))) -ErrorAction Stop
@@ -202,29 +238,24 @@ try {
     Write-Host "Sicherung fehlgeschlagen, nichts geändert: $($_.Exception.Message)" -ForegroundColor Red
     Wait-Enter; exit 1
 }
-$failed = 0
-foreach ($c in $todo) {
+# Eigene Einträge stellt dieses Fenster um, systemweite ohne Adminrechte ein
+# Admin-Fenster nach Plan – mit einer Kopie des Skripts aus %TEMP%, weil es
+# keine Netzlaufwerke sieht.
+$own = @($changes | Where-Object { $isAdmin -or -not $_.Maschine })
+$machine = @($changes | Where-Object { -not $isAdmin -and $_.Maschine })
+$failed = Set-Entries $own
+Write-Host ''
+Write-Host ("{0} Einträge umgestellt, {1} Fehler. Sicherung: {2}" -f ($own.Count - $failed), $failed, $Sicherung) -ForegroundColor Green
+if ($machine.Count -gt 0) {
+    $planFile = Join-Path $env:TEMP 'portable-starter-verknuepfungen.json'
+    $copy = Join-Path $env:TEMP 'portable-starter-verknuepfungen.ps1'
     try {
-        if ($c.Art -eq 'Verknüpfung') {
-            $lnk = $wsh.CreateShortcut($c.Ort)
-            $lnk.TargetPath = $c.Neu
-            $lnk.WorkingDirectory = $c.Arbeitsordner
-            if ($c.Icon) { $lnk.IconLocation = $c.Icon }
-            $lnk.Save()
-        } else {
-            $hive, $sub = $c.Ort -split '\\', 2
-            $rootKey = [Microsoft.Win32.Registry]::CurrentUser
-            if ($hive -eq 'HKEY_LOCAL_MACHINE') { $rootKey = [Microsoft.Win32.Registry]::LocalMachine }
-            $rk = $rootKey.OpenSubKey($sub, $true)
-            $rk.SetValue($c.Wert, $c.Neu, [Microsoft.Win32.RegistryValueKind]$c.Kind)
-            $rk.Close()
-        }
+        Set-Content -LiteralPath $planFile -Value (ConvertTo-Json -InputObject $machine -Depth 3) -Encoding UTF8 -ErrorAction Stop
+        Copy-Item -LiteralPath $PSCommandPath -Destination $copy -Force -ErrorAction Stop
+        Start-Process powershell.exe -Verb RunAs -Wait -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$copy`"", '-Plan', "`"$planFile`"")
     } catch {
-        $failed++
-        Write-Host "FEHLER $($c.Ort): $($_.Exception.Message)" -ForegroundColor Red
+        Remove-Item -LiteralPath $planFile -ErrorAction SilentlyContinue
+        Write-Host "Ohne Adminrechte bleiben $($machine.Count) systemweite Einträge unverändert." -ForegroundColor Yellow
     }
 }
-if (Test-Path "$env:SystemRoot\System32\ie4uinit.exe") { & "$env:SystemRoot\System32\ie4uinit.exe" -show }
-Write-Host ''
-Write-Host ("{0} Einträge umgestellt, {1} Fehler. Sicherung: {2}" -f ($todo.Count - $failed), $failed, $Sicherung) -ForegroundColor Green
 Wait-Enter

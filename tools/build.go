@@ -1,7 +1,7 @@
 // build baut den Portable Starter; aufgerufen von tools\build.bat.
 //
 //	go run .              dist\starter.exe mit Standard-Icon und dist\config_starter.json
-//	go run . Ordner …     je Programmordner portable_<programm>.exe mit Icon und
+//	go run . Ordner …     dazu je Programmordner portable_<programm>.exe mit Icon und
 //	                      Namen des Programms, das der Starter dort findet; fehlt
 //	                      config_starter.json, kommt das Beispiel dazu. Eine Kopie
 //	                      jedes Starters landet in dist\
@@ -54,16 +54,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	if len(os.Args) < 2 {
-		if err := buildDefault(version, cfg); err != nil {
-			fail("dist", err)
-		}
-	}
 	var built []string
 	for _, folder := range os.Args[1:] {
 		if !filepath.IsAbs(folder) {
 			folder = filepath.Join(os.Getenv("STARTER_CWD"), folder) // Ordner relativ zum Aufruf von build.bat
 		}
+		folder = filepath.Clean(folder) // iconFor rechnet mit den bereinigten Pfaden von WalkDir
 		file, err := buildFor(folder, version, cfg)
 		if err != nil {
 			fail(folder, err)
@@ -71,14 +67,15 @@ func main() {
 		}
 		built = append(built, file)
 	}
-	// Kopien erst nach allen Builds: dist\ liegt im Repo, ein geänderter
-	// Stand dort stempelte die folgenden Builds als „geändert“ (vcs.modified).
-	if err := copyToDist(built); err != nil {
+	// Der allgemeine Starter kommt immer mit, damit dist\ auf einem Stand bleibt –
+	// und zuletzt, weil er das Standard-Icon für go build und go test zurücklegt.
+	// Alles, was nach dist\ geht, erst nach allen Builds: dist\ liegt im Repo, ein
+	// geänderter Stand dort stempelte die folgenden Builds als „geändert“ (vcs.modified).
+	if err := buildDefault(version, cfg); err != nil {
 		fail("dist", err)
 	}
-	// go build und go test finden danach wieder das Standard-Icon vor
-	if err := writeDefaultSyso(version, "starter.exe"); err != nil {
-		fail("syso", err)
+	if err := copyToDist(built); err != nil {
+		fail("dist", err)
 	}
 	if failed {
 		os.Exit(1)

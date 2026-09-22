@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.1.1 – 22.09.2026
+
+- Die Versionsangaben der EXEs nennen „Sorglos Thomas Weirich“.
+- `tools\build.bat` baut `dist\starter.exe` bei jedem Lauf mit – `dist\` bleibt auf einem Stand.
+- `tools\verknuepfungen.bat` stellt die eigenen Einträge selbst um und überlässt dem
+  Admin-Fenster nur die systemweiten. Das klappt so auch mit Netzlaufwerken und einem
+  eigenen Admin-Konto.
+- `tools\verknuepfungen.bat` biegt Deinstallationsprogramme und fehlende Dateien in `app\`
+  nie mehr auf den Starter um.
+- `tools\build.bat` stürzt bei Ordnerangaben wie `D:\Apps\.\qet` nicht mehr ab.
+
 ## 1.1.0 – 22.09.2026
 
 - Das Programm darf im Unterordner `app` liegen, der Starter eine Ebene darüber.
