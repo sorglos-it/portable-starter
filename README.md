@@ -14,15 +14,16 @@ Welches Programm mit welchen Parametern, steht in `config_starter.json`.
 
 ## Start in 3 Schritten
 
-1. `starter.exe` in den Ordner des Programms kopieren, z. B. neben `draw.io.exe`.
-   Der Name ist frei, etwa `portable_drawio.exe`.
+1. Aus `dist\` den passenden Starter in den Ordner des Programms kopieren, z. B.
+   `portable_drawio.exe` neben `draw.io.exe`. Für andere Programme `starter.exe` –
+   der Name ist frei.
 2. Doppelklicken. Beim ersten Start legt der Starter `config_starter.json` an.
 3. Fehlt das Programm dort, EXE und Parameter eintragen – der Starter bietet an, die Datei zu öffnen.
 
-Schon eingetragen: draw.io, OrcaSlicer, Creality Print, PrusaSlicer,
-QElectroTech, Mullvad Browser und ecoDMS. Wer bisher `OrcaSlicerPortableStarter`,
-`CrealityPrintPortableStarter` oder `PrusaSlicerPortable` nutzt, behält seinen
-Ordner `profile`.
+Schon eingetragen und in `dist\` fertig mit eigenem Icon: draw.io, OrcaSlicer,
+Creality Print, PrusaSlicer, QElectroTech, Mullvad Browser und ecoDMS. Wer bisher
+`OrcaSlicerPortableStarter`, `CrealityPrintPortableStarter` oder `PrusaSlicerPortable`
+nutzt, behält seinen Ordner `profile`.
 
 **Update:** neue EXE drüberkopieren. `config_starter.json` und die Daten bleiben.
 
@@ -99,13 +100,14 @@ tools\build.bat "D:\Apps\drawio" "D:\Apps\OrcaSlicer"
 Jeder Ordner bekommt `portable_<programm>.exe` mit Icon und Namen des
 Programms, das der Starter dort findet – fehlt `config_starter.json`, kommt
 sie dazu. Hat die EXE kein Icon, nimmt das Werkzeug eine gleichnamige
-`.ico` aus dem Programmordner, sonst das Standard-Icon.
+`.ico` aus dem Programmordner, sonst das Standard-Icon. Eine Kopie landet in `dist\`.
 
 ## Bauen
 
 Voraussetzung ist [Go](https://go.dev/dl/) ab 1.24, sonst nichts.
 `tools\build.bat` ohne Angabe prüft, testet und legt `starter.exe` und
-`config_starter.json` in `dist\` ab.
+`config_starter.json` in `dist\` ab. `dist\` liegt mit im Repo – wer nur
+starten will, braucht kein Go.
 
 ## Sicherheit
 
@@ -122,4 +124,5 @@ Wenn dir der Starter Arbeit spart, freue ich mich über eine Spende. Danke!
 
 ## Lizenz
 
-[MIT](LICENSE). Nicht verbunden mit den Herstellern der gestarteten Programme.
+[MIT](LICENSE). Nicht verbunden mit den Herstellern der gestarteten Programme –
+deren Namen und Icons in `dist\portable_*.exe` gehören ihnen.

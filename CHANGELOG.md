@@ -8,6 +8,9 @@
 - Neuer Platzhalter `{app}` für den Ordner mit den Programmdateien (QElectroTech nutzt ihn).
 - `tools\verknuepfungen.bat` stellt nach dem Umzug Verknüpfungen, Dateitypen und
   Deinstallationseinträge um, die ins Leere zeigen – mit Sicherung und Rückfrage.
+- `dist\` liegt im Repo: `starter.exe` und fertige Starter mit Icon für draw.io,
+  OrcaSlicer, Creality Print, PrusaSlicer, QElectroTech, Mullvad Browser und ecoDMS.
+- `tools\build.bat <Ordner>` legt von jedem Starter eine Kopie in `dist\` ab.
 
 ## 1.0.0 – 21.09.2026
 

@@ -1,0 +1,44 @@
+{
+  "programme": [
+    {
+      "exe": "draw.io.exe",
+      "parameter": ["--user-data-dir={daten}", "--disable-update"]
+    },
+    {
+      "exe": "drawio.exe",
+      "parameter": ["--user-data-dir={daten}", "--disable-update"]
+    },
+    {
+      "exe": "orca-slicer.exe",
+      "parameter": ["--datadir", "profile"]
+    },
+    {
+      "exe": "CrealityPrint.exe",
+      "parameter": ["--datadir", "profile"]
+    },
+    {
+      "exe": "prusa-slicer.exe",
+      "parameter": ["--datadir", "profile"]
+    },
+    {
+      "exe": "bin/qelectrotech.exe",
+      "parameter": [
+        "-platform", "windows:fontengine=freetype",
+        "--common-elements-dir={app}/elements/",
+        "--common-tbt-dir={app}/titleblocks/",
+        "--lang-dir={app}/lang/",
+        "--config-dir={ordner}/conf/",
+        "-style", "plastique"
+      ]
+    },
+    {
+      "exe": "Browser/mullvadbrowser.exe"
+    },
+    {
+      "exe": "ecodmsclient.exe",
+      "vorher": [
+        { "exe": "ecodmssinglesignon.exe", "warten": 3 }
+      ]
+    }
+  ]
+}

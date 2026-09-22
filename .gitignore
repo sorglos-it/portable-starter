@@ -1,5 +1,4 @@
-# Erzeugtes
-dist/
+# Erzeugtes - dist/ ist bewusst im Repo: fertige Starter zum Herunterladen
 bin/
 obj/
 .pio/
