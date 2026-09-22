@@ -3,7 +3,8 @@
 //	go run .              dist\starter.exe mit Standard-Icon und dist\config_starter.json
 //	go run . Ordner …     je Programmordner portable_<programm>.exe mit Icon und
 //	                      Namen des Programms, das der Starter dort findet; fehlt
-//	                      config_starter.json, kommt das Beispiel dazu
+//	                      config_starter.json, kommt das Beispiel dazu. Eine Kopie
+//	                      jedes Starters landet in dist\
 package main
 
 import (
@@ -58,13 +59,22 @@ func main() {
 			fail("dist", err)
 		}
 	}
+	var built []string
 	for _, folder := range os.Args[1:] {
 		if !filepath.IsAbs(folder) {
 			folder = filepath.Join(os.Getenv("STARTER_CWD"), folder) // Ordner relativ zum Aufruf von build.bat
 		}
-		if err := buildFor(folder, version, cfg); err != nil {
+		file, err := buildFor(folder, version, cfg)
+		if err != nil {
 			fail(folder, err)
+			continue
 		}
+		built = append(built, file)
+	}
+	// Kopien erst nach allen Builds: dist\ liegt im Repo, ein geänderter
+	// Stand dort stempelte die folgenden Builds als „geändert“ (vcs.modified).
+	if err := copyToDist(built); err != nil {
+		fail("dist", err)
 	}
 	// go build und go test finden danach wieder das Standard-Icon vor
 	if err := writeDefaultSyso(version, "starter.exe"); err != nil {
@@ -102,28 +112,29 @@ func buildDefault(version [4]uint16, cfg []byte) error {
 }
 
 // buildFor legt in folder portable_<programm>.exe mit Icon und Namen des
-// Programms ab, das der Starter dort starten wird – neben ihm oder in app\.
-func buildFor(folder string, version [4]uint16, example []byte) error {
+// Programms ab, das der Starter dort starten wird – neben ihm oder in app\ –,
+// und liefert den Pfad der EXE.
+func buildFor(folder string, version [4]uint16, example []byte) (string, error) {
 	cfgPath := filepath.Join(folder, classes.ConfigName)
 	data, err := os.ReadFile(cfgPath)
 	missing := errors.Is(err, fs.ErrNotExist)
 	if missing {
 		data = example
 	} else if err != nil {
-		return err
+		return "", err
 	}
 	cfg, err := classes.ParseConfig(data)
 	if err != nil {
-		return err
+		return "", err
 	}
 	target, err := cfg.Find(folder, "")
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	images, source, err := iconFor(folder, target.Exe)
 	if err != nil {
-		return err
+		return "", err
 	}
 	name := productName(target.Exe)
 	if name == "" {
@@ -131,17 +142,41 @@ func buildFor(folder string, version [4]uint16, example []byte) error {
 	}
 	file := "portable_" + slug(target.Exe) + ".exe"
 	if err := writeSyso(resInfo{images, version, name + " portable", file}, syso); err != nil {
-		return err
+		return "", err
 	}
-	if err := goBuild(filepath.Join(folder, file)); err != nil {
-		return err
+	out := filepath.Join(folder, file)
+	if err := goBuild(out); err != nil {
+		return "", err
 	}
 	if missing {
 		if err := os.WriteFile(cfgPath, example, 0o644); err != nil {
-			return err
+			return "", err
 		}
 	}
 	fmt.Printf("%s  ->  %s  („%s portable“, Icon: %s)\n", folder, file, name, source)
+	return out, nil
+}
+
+// copyToDist legt eine Kopie der gebauten Starter in dist\ ab.
+func copyToDist(files []string) error {
+	if len(files) == 0 {
+		return nil
+	}
+	if err := os.MkdirAll(dist, 0o755); err != nil {
+		return err
+	}
+	names := make([]string, len(files))
+	for i, file := range files {
+		data, err := os.ReadFile(file)
+		if err != nil {
+			return err
+		}
+		names[i] = filepath.Base(file)
+		if err := os.WriteFile(filepath.Join(dist, names[i]), data, 0o755); err != nil {
+			return err
+		}
+	}
+	fmt.Printf("Kopie in dist\\: %s\n", strings.Join(names, ", "))
 	return nil
 }
 

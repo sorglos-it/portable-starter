@@ -2,8 +2,8 @@
 rem Baut den Portable Starter.
 rem   tools\build.bat                        dist\starter.exe mit Standard-Icon
 rem   tools\build.bat "D:\Apps\drawio" ...   je Ordner portable_<programm>.exe mit dem
-rem                                          Icon des Programms - Ordner einfach auf
-rem                                          diese Datei ziehen
+rem                                          Icon des Programms, Kopie nach dist\ -
+rem                                          Ordner einfach auf diese Datei ziehen
 setlocal
 set "STARTER_CWD=%CD%"
 where go >nul 2>&1 || (echo Go fehlt: https://go.dev/dl/ & pause & exit /b 1)
