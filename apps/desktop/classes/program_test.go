@@ -49,6 +49,19 @@ func TestArgumentsWithoutDataKeepsFolderClean(t *testing.T) {
 	}
 }
 
+func TestArgumentsFindsExistingFoldersBesideStarter(t *testing.T) {
+	dir := t.TempDir()
+	os.Mkdir(filepath.Join(dir, "profile"), 0o755)
+	got, err := (Program{Parameters: []string{"--datadir", "profile", "-style", "plastique"}}).Arguments(dir, t.TempDir(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"--datadir", filepath.Join(dir, "profile"), "-style", "plastique"}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("%q, erwartet %q", got, want)
+	}
+}
+
 func TestArgumentsMakesExtraFilesAbsolute(t *testing.T) {
 	work := t.TempDir()
 	// t.Chdir findet auf einem Netzlaufwerk nicht zurück, deshalb von Hand

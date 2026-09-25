@@ -138,7 +138,7 @@ func (p Program) Arguments(dir, app string, extra []string) ([]string, error) {
 		if mkErr != nil {
 			return nil, problem("start.datadir", data, mkErr)
 		}
-		args = append(args, arg)
+		args = append(args, besideStarter(dir, arg))
 	}
 	for _, arg := range extra {
 		args = append(args, absPath(arg))
@@ -146,8 +146,22 @@ func (p Program) Arguments(dir, app string, extra []string) ([]string, error) {
 	return args, nil
 }
 
+// besideStarter macht einen relativen Parameter absolut, wenn es ihn beim
+// Starter gibt: Das Programm läuft im Ordner seiner EXE, ältere Einträge wie
+// ["--datadir", "profile"] meinen aber den Ordner neben dem Starter.
+func besideStarter(dir, arg string) string {
+	if arg == "" || strings.HasPrefix(arg, "-") || filepath.IsAbs(arg) {
+		return arg
+	}
+	path := filepath.Join(dir, arg)
+	if _, err := os.Stat(path); err != nil {
+		return arg
+	}
+	return path
+}
+
 // absPath macht den Pfad einer vorhandenen Datei oder eines Ordners absolut:
-// Das Programm läuft im Ordner des Starters, dort zeigte ein relativer Pfad
+// Das Programm läuft im Ordner seiner EXE, dort zeigte ein relativer Pfad
 // des Aufrufers ins Leere.
 func absPath(arg string) string {
 	if filepath.IsAbs(arg) {

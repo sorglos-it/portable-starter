@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.2 – 24.09.2026
+
+- Arbeitsordner ist jetzt der Ordner der EXE, wie beim Doppelklick. Behebt ecoDMS im
+  Ordner `app\`: Vorschau und Kontextmenü fehlten.
+- Beispiel-Konfiguration: `--datadir {ordner}/profile`, damit Daten beim Starter bleiben.
+  Ältere Einträge mit `profile` finden den vorhandenen Ordner beim Starter weiter.
+
 ## 1.1.1 – 22.09.2026
 
 - Die Versionsangaben der EXEs nennen „Sorglos Thomas Weirich“.

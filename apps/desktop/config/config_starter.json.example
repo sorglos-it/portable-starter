@@ -10,15 +10,15 @@
     },
     {
       "exe": "orca-slicer.exe",
-      "parameter": ["--datadir", "profile"]
+      "parameter": ["--datadir", "{ordner}/profile"]
     },
     {
       "exe": "CrealityPrint.exe",
-      "parameter": ["--datadir", "profile"]
+      "parameter": ["--datadir", "{ordner}/profile"]
     },
     {
       "exe": "prusa-slicer.exe",
-      "parameter": ["--datadir", "profile"]
+      "parameter": ["--datadir", "{ordner}/profile"]
     },
     {
       "exe": "bin/qelectrotech.exe",

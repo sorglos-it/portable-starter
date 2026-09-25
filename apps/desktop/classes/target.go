@@ -12,7 +12,7 @@ const AppDir = "app"
 // Target ist das Programm, das Config.Find gefunden hat, mit seinen Ordnern.
 type Target struct {
 	Program
-	Dir string // Ordner des Starters: {ordner}, Daten und Arbeitsordner
+	Dir string // Ordner des Starters: {ordner}, Daten
 	App string // Ordner der Programmdateien: {app}, ab hier gelten „exe“ und „vorher“
 	Exe string // Pfad der EXE
 }
@@ -40,7 +40,9 @@ func (t Target) launch(p Program, exe string, extra []string) error {
 	if err != nil {
 		return err
 	}
-	if err := Launch(exe, args, t.Dir); err != nil {
+	// Arbeitsordner ist der Ordner der EXE, wie beim Doppelklick: Manche
+	// Programme (ecoDMS) laden Plugins relativ dazu.
+	if err := Launch(exe, args, filepath.Dir(exe)); err != nil {
 		return problem("start.failed", p.Exe, err)
 	}
 	return nil

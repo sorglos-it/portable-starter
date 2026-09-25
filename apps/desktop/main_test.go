@@ -116,7 +116,7 @@ func TestStart(t *testing.T) {
 	}
 
 	// Beide Aufbauten: Programm neben dem Starter ("") oder im Unterordner app.
-	// Arbeitsordner und Daten liegen in beiden Fällen beim Starter.
+	// Daten liegen in beiden Fällen beim Starter, Arbeitsordner ist der Ordner der EXE.
 	for _, sub := range []string{"", "app"} {
 		name := map[string]string{"": "neben dem Starter", "app": "im Ordner app"}[sub]
 
@@ -124,7 +124,7 @@ func TestStart(t *testing.T) {
 			exe := filepath.Join(sub, "draw.io.exe")
 			dir := setup(t, exe)
 			_, got := started(t, filepath.Join(dir, exe))
-			want := append([]string{dir, "--user-data-dir=" + filepath.Join(dir, "daten"), "--disable-update"}, extra...)
+			want := append([]string{filepath.Dir(filepath.Join(dir, exe)), "--user-data-dir=" + filepath.Join(dir, "daten"), "--disable-update"}, extra...)
 			if !sameLines(got, want) {
 				t.Errorf("draw.io bekam\n%q\nerwartet\n%q", got, want)
 			}
@@ -135,7 +135,7 @@ func TestStart(t *testing.T) {
 			dir := setup(t, exe)
 			app := filepath.Join(dir, sub)
 			_, got := started(t, filepath.Join(dir, exe))
-			want := append([]string{dir,
+			want := append([]string{filepath.Join(app, "bin"),
 				"-platform", "windows:fontengine=freetype",
 				"--common-elements-dir=" + app + "/elements/",
 				"--common-tbt-dir=" + app + "/titleblocks/",
@@ -150,12 +150,13 @@ func TestStart(t *testing.T) {
 		t.Run("ecoDMS "+name+" mit vorher und warten", func(t *testing.T) {
 			signOnExe, clientExe := filepath.Join(sub, "ecodmssinglesignon.exe"), filepath.Join(sub, "ecodmsclient.exe")
 			dir := setup(t, signOnExe, clientExe)
+			app := filepath.Join(dir, sub)
 			signOn, got := started(t, filepath.Join(dir, signOnExe))
-			if !sameLines(got, []string{dir}) {
+			if !sameLines(got, []string{app}) {
 				t.Errorf("Anmeldung bekam %q, erwartet nur den Arbeitsordner", got)
 			}
 			client, got := started(t, filepath.Join(dir, clientExe))
-			if want := append([]string{dir}, extra...); !sameLines(got, want) {
+			if want := append([]string{app}, extra...); !sameLines(got, want) {
 				t.Errorf("Client bekam\n%q\nerwartet\n%q", got, want)
 			}
 			if pause := client.Sub(signOn); pause < 2900*time.Millisecond {

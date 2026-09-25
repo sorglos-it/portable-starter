@@ -40,8 +40,9 @@ drawio\                        drawio\
                                └── config_starter.json
 ```
 
-The starter looks for the EXE next to itself, otherwise in the subfolder `app`. The working
-folder and the data are next to the starter in both cases – an update only replaces `app\`.
+The starter looks for the EXE next to itself, otherwise in the subfolder `app`. The program
+runs in its own folder, like on a double-click; the data stay next to the starter –
+an update only replaces `app\`.
 
 **Moving to the second layout:** move the program files into `app\`; starter, JSON and
 data folder stay on top. Then double-click `tools\verknuepfungen.bat` and pick the program
@@ -63,7 +64,7 @@ the placeholders `{ordner}` (folder) and `{daten}` (data).
     },
     {
       "exe": "orca-slicer.exe",
-      "parameter": ["--datadir", "profile"]
+      "parameter": ["--datadir", "{ordner}/profile"]
     }
   ]
 }
@@ -73,7 +74,7 @@ the placeholders `{ordner}` (folder) and `{daten}` (data).
   So one file fits many programs.
 - `exe` – file name, also with a subfolder: `bin/program.exe`.
 - `parameter` – one entry per parameter. Spaces need no quotation marks.
-- Relative paths start at the starter – that is also where the data ends up.
+- For data next to the starter use `{ordner}` or `{daten}`: `"--datadir", "{ordner}/profile"`.
 - `{ordner}` – the starter's folder. `{daten}` – its subfolder `daten`, created if missing.
 - `{app}` – the folder with the program files: `app\`, otherwise the starter's folder.
 - Files dropped onto the starter are passed on to the program.
